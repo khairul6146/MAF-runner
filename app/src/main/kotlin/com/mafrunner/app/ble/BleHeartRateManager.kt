@@ -45,6 +45,7 @@ class BleHeartRateManager(private val context: Context) {
 
     private var activeGatt: BluetoothGatt? = null
     private var targetMacAddress: String? = null
+    private var isManualDisconnect = false
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     companion object {
@@ -122,6 +123,8 @@ class BleHeartRateManager(private val context: Context) {
 
     @SuppressLint("MissingPermission")
     fun connect(macAddress: String) {
+        isManualDisconnect = false
+        targetMacAddress = macAddress
         saveMacAddress(macAddress)
         stopScan()
 
@@ -134,6 +137,7 @@ class BleHeartRateManager(private val context: Context) {
 
     @SuppressLint("MissingPermission")
     fun disconnect() {
+        isManualDisconnect = true
         activeGatt?.disconnect()
         activeGatt?.close()
         activeGatt = null
@@ -151,11 +155,13 @@ class BleHeartRateManager(private val context: Context) {
                 _connectionState.value = BleConnectionState.DISCONNECTED
                 _heartRateFlow.value = null
                 // Auto-reconnect loop
-                targetMacAddress?.let { mac ->
-                    scope.launch {
-                        delay(2000L)
-                        if (_connectionState.value == BleConnectionState.DISCONNECTED) {
-                            connect(mac)
+                if (!isManualDisconnect) {
+                    targetMacAddress?.let { mac ->
+                        scope.launch {
+                            delay(2000L)
+                            if (!isManualDisconnect && _connectionState.value == BleConnectionState.DISCONNECTED) {
+                                connect(mac)
+                            }
                         }
                     }
                 }

@@ -30,8 +30,10 @@ fun ConsoleScreen(
     onResume: () -> Unit,
     onFinish: () -> Unit
 ) {
-    val currentHr = state.currentHr ?: 0
+    val currentHr = state.currentHr
+    val isConnected = currentHr != null && currentHr > 0
     val activeZone = when {
+        !isConnected -> null
         currentHr >= zones.ceiling -> MafZone.OVER_CEILING
         currentHr < zones.floor -> MafZone.BELOW_FLOOR
         else -> MafZone.MAF_TARGET
@@ -39,6 +41,7 @@ fun ConsoleScreen(
 
     // Border color based on zone
     val targetBorderColor = when (activeZone) {
+        null -> NordicCardBorder
         MafZone.BELOW_FLOOR -> NordicCyan
         MafZone.MAF_TARGET -> NordicEmerald
         MafZone.OVER_CEILING -> NordicCrimson
@@ -86,7 +89,7 @@ fun ConsoleScreen(
                     modifier = Modifier
                         .size(8.dp)
                         .clip(CircleShape)
-                        .background(NordicEmerald)
+                        .background(if (isConnected) NordicEmerald else NordicLightGray)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text("COOSPO H9Z", color = NordicLightGray, fontSize = 11.sp, fontWeight = FontWeight.Bold)
@@ -94,11 +97,12 @@ fun ConsoleScreen(
 
             Text(
                 text = when (activeZone) {
+                    null -> "CONNECTING STRAP"
                     MafZone.BELOW_FLOOR -> "BELOW FLOOR"
                     MafZone.MAF_TARGET -> "MAF OPTIMAL"
                     MafZone.OVER_CEILING -> "ALERT: OVER CEILING"
                 },
-                color = targetBorderColor,
+                color = if (isConnected) targetBorderColor else NordicLightGray,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Black,
                 letterSpacing = 1.sp
@@ -117,11 +121,12 @@ fun ConsoleScreen(
         ) {
             Text(
                 text = when (activeZone) {
+                    null -> "SEARCHING COOSPO H9Z SIGNAL • ATTACH STRAP"
                     MafZone.BELOW_FLOOR -> "BELOW AEROBIC FLOOR • INCREASE PACE"
                     MafZone.MAF_TARGET -> "AEROBIC SWEET SPOT • KEEP STEADY"
                     MafZone.OVER_CEILING -> "OVER MAF CEILING • SLOW TO A WALK NOW"
                 },
-                color = targetBorderColor,
+                color = if (isConnected) targetBorderColor else NordicLightGray,
                 fontWeight = FontWeight.Black,
                 fontSize = 13.sp,
                 letterSpacing = 0.6.sp,
@@ -141,7 +146,7 @@ fun ConsoleScreen(
                 letterSpacing = 1.2.sp
             )
             Text(
-                text = if (currentHr > 0) "$currentHr" else "--",
+                text = if (isConnected) "$currentHr" else "--",
                 color = NordicWhite,
                 fontSize = 118.sp,
                 fontWeight = FontWeight.Black,

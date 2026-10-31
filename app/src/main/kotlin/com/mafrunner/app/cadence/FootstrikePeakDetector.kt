@@ -14,6 +14,7 @@ class FootstrikePeakDetector(
 
     private var lastStrikeTimestampMs = 0L
     private val strikeIntervals = ArrayDeque<Long>(8)
+    private var noiseFloor: Float = 0.1f
 
     fun setSensitivity(multiplier: Float) {
         // Multiplier 1..10 maps to energy threshold 0.9..0.1
@@ -22,7 +23,11 @@ class FootstrikePeakDetector(
     }
 
     fun processSample(energy: Float, timestampMs: Long): Boolean {
-        if (energy < energyThreshold) {
+        // Adaptive noise floor tracking prevents steady treadmill motor hum from false triggering
+        val dynamicThreshold = maxOf(energyThreshold, noiseFloor * 1.35f)
+        noiseFloor = (noiseFloor * 0.95f) + (energy * 0.05f)
+
+        if (energy < dynamicThreshold) {
             return false
         }
 
@@ -53,5 +58,6 @@ class FootstrikePeakDetector(
         lastStrikeTimestampMs = 0L
         strikeIntervals.clear()
         _cadenceSpm.value = 0
+        noiseFloor = 0.1f
     }
 }

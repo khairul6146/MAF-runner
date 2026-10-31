@@ -94,6 +94,35 @@ class WorkoutRepository(context: Context) {
         }
     }
 
+    suspend fun updateWorkoutDetails(
+        workoutId: Long,
+        speed: Float?,
+        distance: Float?,
+        isBenchmark: Boolean
+    ): Unit = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val values = ContentValues().apply {
+            if (speed != null) {
+                put(WorkoutDatabaseHelper.COL_TREADMILL_SPEED, speed)
+            } else {
+                putNull(WorkoutDatabaseHelper.COL_TREADMILL_SPEED)
+            }
+            if (distance != null) {
+                put(WorkoutDatabaseHelper.COL_TREADMILL_DISTANCE, distance)
+            } else {
+                putNull(WorkoutDatabaseHelper.COL_TREADMILL_DISTANCE)
+            }
+            put(WorkoutDatabaseHelper.COL_IS_BENCHMARK, if (isBenchmark) 1 else 0)
+        }
+        db.update(
+            WorkoutDatabaseHelper.TABLE_WORKOUTS,
+            values,
+            "${WorkoutDatabaseHelper.COL_ID} = ?",
+            arrayOf(workoutId.toString())
+        )
+        refreshWorkouts()
+    }
+
     suspend fun getSamplesForWorkout(workoutId: Long): List<HeartRateSampleEntity> = withContext(Dispatchers.IO) {
         val list = mutableListOf<HeartRateSampleEntity>()
         val db = dbHelper.readableDatabase

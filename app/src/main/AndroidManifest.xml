@@ -17,10 +17,9 @@
     <!-- Keep CPU awake on treadmill console -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
-    <!-- Foreground Services -->
+    <!-- Foreground Services: Coospo H9Z is an external BLE connected device -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
@@ -43,8 +42,18 @@
 
         <service
             android:name=".service.WorkoutTrackingService"
-            android:foregroundServiceType="connectedDevice|health"
+            android:foregroundServiceType="connectedDevice"
             android:exported="false" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>

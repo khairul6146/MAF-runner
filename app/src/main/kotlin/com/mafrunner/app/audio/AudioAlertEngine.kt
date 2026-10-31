@@ -6,6 +6,8 @@ import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.SoundPool
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
@@ -25,6 +27,8 @@ class AudioAlertEngine(private val context: Context) {
     private val soundPool: SoundPool
     private var ceilingSoundId: Int = 0
     private var floorSoundId: Int = 0
+    private var activeFocusRequest: AudioFocusRequest? = null
+    private val handler = Handler(Looper.getMainLooper())
 
     init {
         val audioAttributes = AudioAttributes.Builder()
@@ -51,8 +55,9 @@ class AudioAlertEngine(private val context: Context) {
     }
 
     private fun requestTransientAudioFocus() {
+        handler.removeCallbacksAndMessages(null)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
+            val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
                 .setAudioAttributes(
                     AudioAttributes.Builder()
                         .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
@@ -60,7 +65,8 @@ class AudioAlertEngine(private val context: Context) {
                         .build()
                 )
                 .build()
-            audioManager.requestAudioFocus(focusRequest)
+            activeFocusRequest = req
+            audioManager.requestAudioFocus(req)
         } else {
             @Suppress("DEPRECATION")
             audioManager.requestAudioFocus(
@@ -69,6 +75,17 @@ class AudioAlertEngine(private val context: Context) {
                 AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK
             )
         }
+    }
+
+    private fun abandonTransientAudioFocusAfter(delayMs: Long = 350L) {
+        handler.postDelayed({
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                activeFocusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
+            } else {
+                @Suppress("DEPRECATION")
+                audioManager.abandonAudioFocus(null)
+            }
+        }, delayMs)
     }
 
     fun playCeilingAlert() {
@@ -84,6 +101,7 @@ class AudioAlertEngine(private val context: Context) {
             @Suppress("DEPRECATION")
             vibrator?.vibrate(250)
         }
+        abandonTransientAudioFocusAfter(350L)
     }
 
     fun playFloorAlert() {
@@ -91,9 +109,11 @@ class AudioAlertEngine(private val context: Context) {
         if (floorSoundId != 0) {
             soundPool.play(floorSoundId, 0.7f, 0.7f, 0, 0, 1.0f)
         }
+        abandonTransientAudioFocusAfter(250L)
     }
 
     fun release() {
+        handler.removeCallbacksAndMessages(null)
         soundPool.release()
     }
 }

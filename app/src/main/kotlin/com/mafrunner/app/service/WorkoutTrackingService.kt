@@ -43,7 +43,7 @@ class WorkoutTrackingService : Service() {
     lateinit var cadenceDetector: AcousticCadenceDetector
         private set
     private lateinit var alertEngine: AudioAlertEngine
-    private lateinit var repository: WorkoutRepository
+    lateinit var repository: WorkoutRepository
     private val alertEvaluator = AudioAlertEvaluator()
     private val mafCalculator = MafCalculator()
 
@@ -56,6 +56,7 @@ class WorkoutTrackingService : Service() {
     private var workoutStartTime = 0L
     private var lastCeilingAlertMs = 0L
     private var lastFloorAlertMs = 0L
+    private var cadenceRecordingEnabled = true
     private var timerJob: Job? = null
 
     companion object {
@@ -91,7 +92,7 @@ class WorkoutTrackingService : Service() {
                     if (alertEvaluator.shouldTriggerCeilingAlert(hr, activeZones.ceiling, lastCeilingAlertMs, now)) {
                         alertEngine.playCeilingAlert()
                         lastCeilingAlertMs = now
-                    } else if (alertEvaluator.shouldTriggerFloorAlert(hr, activeZones.floor, lastFloorAlertMs, now)) {
+                    } else if (currentState.elapsedSeconds >= 30 && alertEvaluator.shouldTriggerFloorAlert(hr, activeZones.floor, lastFloorAlertMs, now)) {
                         alertEngine.playFloorAlert()
                         lastFloorAlertMs = now
                     }
@@ -111,13 +112,16 @@ class WorkoutTrackingService : Service() {
         activeZones = mafCalculator.calculate(age, category, manualCeiling)
     }
 
-    fun startWorkout() {
+    fun startWorkout(enableCadence: Boolean = true) {
         samples.clear()
         workoutStartTime = System.currentTimeMillis()
         wakeLock?.acquire(3 * 60 * 60 * 1000L) // 3 hours max
 
         _sessionState.value = WorkoutSessionState(isActive = true, isPaused = false)
-        cadenceDetector.start()
+        cadenceRecordingEnabled = enableCadence
+        if (enableCadence) {
+            cadenceDetector.start()
+        }
 
         startForegroundService()
 
@@ -163,11 +167,15 @@ class WorkoutTrackingService : Service() {
 
     fun pauseWorkout() {
         _sessionState.value = _sessionState.value.copy(isPaused = true)
+        cadenceDetector.stop()
         updateNotification()
     }
 
     fun resumeWorkout() {
         _sessionState.value = _sessionState.value.copy(isPaused = false)
+        if (cadenceRecordingEnabled) {
+            cadenceDetector.start()
+        }
         updateNotification()
     }
 
@@ -219,7 +227,7 @@ class WorkoutTrackingService : Service() {
             startForeground(
                 NOTIFICATION_ID,
                 notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE or ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
             )
         } else {
             startForeground(NOTIFICATION_ID, notification)

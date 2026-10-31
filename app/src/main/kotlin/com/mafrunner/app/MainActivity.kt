@@ -32,13 +32,14 @@ import com.mafrunner.app.domain.MafCalculator
 import com.mafrunner.app.domain.MafZones
 import com.mafrunner.app.service.WorkoutSessionState
 import com.mafrunner.app.service.WorkoutTrackingService
+import com.mafrunner.app.export.ExportManager
 import com.mafrunner.app.ui.screens.*
 import com.mafrunner.app.ui.theme.*
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
-    private var workoutService: WorkoutTrackingService? = null
+    private var workoutService by mutableStateOf<WorkoutTrackingService?>(null)
     private var isServiceBound = false
 
     private val serviceConnection = object : ServiceConnection {
@@ -206,7 +207,7 @@ fun MainAppContainer(
                     },
                     onStartWorkout = {
                         workoutService?.configureZones(age, category)
-                        workoutService?.startWorkout()
+                        workoutService?.startWorkout(enableCadence = cadenceEnabled)
                         currentTab = 1
                     }
                 )
@@ -229,7 +230,10 @@ fun MainAppContainer(
                 2 -> HistoryScreen(
                     workouts = workouts,
                     onExportAll = {
-                        Toast.makeText(activity, "Workouts exported to Downloads/maf_workouts.csv", Toast.LENGTH_LONG).show()
+                        scope.launch {
+                            val repo = workoutService?.repository ?: WorkoutRepository(activity)
+                            ExportManager.exportAll(activity, workouts, repo)
+                        }
                     }
                 )
             }
@@ -253,6 +257,10 @@ fun MainAppContainer(
                 PostRunSummaryDialog(
                     workout = workout,
                     onSave = { speed, distance, isBenchmark ->
+                        scope.launch {
+                            val repo = workoutService?.repository ?: WorkoutRepository(activity)
+                            repo.updateWorkoutDetails(workout.id, speed, distance, isBenchmark)
+                        }
                         summaryWorkout = null
                         currentTab = 2
                     },
