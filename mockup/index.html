@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MAF Runner - Clean & Modern UI Design</title>
+  <style>
+    /* DIRECTION A: Nordic Athletic OLED (Default) */
+    :root {
+      --bg-canvas: #000000;
+      --card-bg: #121214;
+      --border-subtle: #242428;
+      --text-primary: #FFFFFF;
+      --text-secondary: #8E8E93;
+      --text-tertiary: #48484A;
+      --color-cyan: #00D2FF;
+      --color-emerald: #00E676;
+      --color-crimson: #FF3B30;
+      --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", Roboto, sans-serif;
+      --font-mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 24px;
+    }
+
+    /* THEME: Direction B - Tactical Neo-Utility */
+    body.theme-tactical {
+      --bg-canvas: #0C0D0E;
+      --card-bg: #16181B;
+      --border-subtle: #2A2E35;
+      --text-primary: #F5F5F7;
+      --text-secondary: #9DA3AE;
+      --text-tertiary: #525866;
+      --color-cyan: #38BDF8;
+      --color-emerald: #10B981;
+      --color-crimson: #EF4444;
+      --font-stack: "JetBrains Mono", Menlo, -apple-system, sans-serif;
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: var(--font-stack);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background: #08080A;
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    header p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    /* Style Direction Selector */
+    .style-picker {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #141416;
+      border: 1px solid #28282D;
+      padding: 6px;
+      border-radius: 30px;
+      margin-bottom: 20px;
+    }
+
+    .style-chip {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .style-chip.active {
+      background: #2C2C2E;
+      color: #FFF;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+
+    /* Tab Switcher */
+    .tab-bar {
+      display: flex;
+      background: #141418;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 4px;
+      margin-bottom: 20px;
+      gap: 4px;
+    }
+
+    .tab-item {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .tab-item.active {
+      background: #24242A;
+      color: #FFF;
+    }
+
+    /* Smartphone Frame */
+    .device-container {
+      width: 100%;
+      max-width: 380px;
+      height: 760px;
+      background: var(--bg-canvas);
+      border: 4px solid #2A2A30;
+      border-radius: 36px;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.06);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .device-notch {
+      width: 110px;
+      height: 20px;
+      background: #2A2A30;
+      margin: 0 auto;
+      border-bottom-left-radius: 12px;
+      border-bottom-right-radius: 12px;
+    }
+
+    .screen {
+      flex: 1;
+      padding: 24px 18px 20px 18px;
+      display: none;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    /* Card Component */
+    .ui-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .card-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* MAF Calculator Card */
+    .maf-hero-card {
+      background: linear-gradient(180deg, #18191E 0%, #101114 100%);
+      border: 1px solid #2A2C34;
+      border-radius: var(--radius-lg);
+      padding: 20px 18px;
+      margin-bottom: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .maf-hero-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--color-cyan), var(--color-emerald));
+    }
+
+    .hero-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    .hero-number {
+      font-size: 42px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-primary);
+    }
+
+    .hero-number span {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-left: 2px;
+    }
+
+    .range-pills {
+      text-align: right;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .range-pills b {
+      color: var(--text-primary);
+      font-weight: 700;
+    }
+
+    /* Health Category Segmented Selector */
+    .category-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .cat-btn {
+      background: #18191E;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      text-align: left;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: all 0.15s;
+    }
+
+    .cat-btn.selected {
+      background: #22252C;
+      border-color: #38BDF8;
+      color: #FFF;
+    }
+
+    .cat-btn .badge-val {
+      font-size: 12px;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      color: #38BDF8;
+      margin-bottom: 2px;
+    }
+
+    .cat-btn .badge-name {
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+
+    /* Coospo Status */
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .led-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--color-emerald);
+      box-shadow: 0 0 10px var(--color-emerald);
+    }
+
+    /* Primary CTA Button */
+    .cta-btn {
+      background: #FFFFFF;
+      color: #000000;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 16px;
+      font-size: 15px;
+      font-weight: 700;
+      width: 100%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: auto;
+      transition: transform 0.1s, opacity 0.2s;
+    }
+
+    .cta-btn:hover {
+      opacity: 0.92;
+    }
+
+    .cta-btn:active {
+      transform: scale(0.98);
+    }
+
+    /* SCREEN 2: Treadmill Console (Clean, Precision Dark) */
+    #screen-console {
+      padding: 18px 16px 20px 16px;
+      transition: border-color 0.25s, box-shadow 0.25s;
+      position: relative;
+    }
+
+    .console-under {
+      border: 3px solid var(--color-cyan) !important;
+    }
+
+    .console-inzone {
+      border: 3px solid var(--color-emerald) !important;
+    }
+
+    .console-over {
+      border: 3px solid var(--color-crimson) !important;
+      animation: alertBorder 0.8s infinite alternate ease-in-out;
+    }
+
+    @keyframes alertBorder {
+      0% { box-shadow: inset 0 0 20px rgba(255, 59, 48, 0.3); }
+      100% { box-shadow: inset 0 0 70px rgba(255, 59, 48, 0.7); }
+    }
+
+    .top-status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .device-chip {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #141518;
+      padding: 5px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .state-banner {
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      text-align: center;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 16px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .banner-cyan { background: rgba(0, 210, 255, 0.12); color: var(--color-cyan); border: 1px solid rgba(0, 210, 255, 0.3); }
+    .banner-emerald { background: rgba(0, 230, 118, 0.12); color: var(--color-emerald); border: 1px solid rgba(0, 230, 118, 0.3); }
+    .banner-crimson { background: rgba(255, 59, 48, 0.18); color: var(--color-crimson); border: 1px solid rgba(255, 59, 48, 0.4); }
+
+    /* The Massive BPM Core */
+    .bpm-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 10px 0 16px 0;
+    }
+
+    .bpm-meta-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+
+    .bpm-huge-val {
+      font-size: 118px;
+      font-weight: 900;
+      line-height: 0.9;
+      letter-spacing: -4px;
+      color: #FFFFFF;
+      font-variant-numeric: tabular-nums;
+      margin: 8px 0;
+    }
+
+    .bpm-zone-reference {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Secondary Metric Grid */
+    .dual-metric-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .metric-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      text-align: center;
+    }
+
+    .m-caption {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+
+    .m-number {
+      font-size: 28px;
+      font-weight: 800;
+      color: #FFFFFF;
+      font-variant-numeric: tabular-nums;
+      margin-top: 4px;
+    }
+
+    .m-number small {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    /* Zone Distribution Bar */
+    .zone-track {
+      height: 6px;
+      background: #1C1D22;
+      border-radius: 3px;
+      display: flex;
+      overflow: hidden;
+      margin: 8px 0 16px 0;
+    }
+
+    .seg-under { background: var(--color-cyan); }
+    .seg-inzone { background: var(--color-emerald); }
+    .seg-over { background: var(--color-crimson); }
+
+    /* Action Buttons */
+    .btn-duo {
+      display: flex;
+      gap: 10px;
+      margin-top: auto;
+    }
+
+    .btn-secondary {
+      background: #1C1D22;
+      color: #FFFFFF;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      font-size: 14px;
+      font-weight: 700;
+      flex: 1;
+      cursor: pointer;
+    }
+
+    .btn-finish {
+      background: #2C1214;
+      color: #FF453A;
+      border: 1px solid #5C1D20;
+      border-radius: var(--radius-md);
+      padding: 16px;
+      font-size: 14px;
+      font-weight: 700;
+      flex: 1;
+      cursor: pointer;
+    }
+
+    /* Simulator Tray */
+    .simulator-tray {
+      background: #111215;
+      border: 1px solid #23242A;
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      width: 100%;
+      max-width: 380px;
+      margin-top: 16px;
+    }
+
+    .tray-header {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #38BDF8;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .tray-slider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .tray-slider input[type=range] {
+      flex: 1;
+      accent-color: #38BDF8;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Clean & Modern Athletic UI Design</h1>
+    <p>Zero AI Slop • Pure High-Contrast Utility for Treadmill Running</p>
+  </header>
+
+  <!-- Style Direction Switcher -->
+  <div class="style-picker">
+    <button class="style-chip active" onclick="setTheme('nordic', this)">Style A: Nordic Athletic OLED (Recommended)</button>
+    <button class="style-chip" onclick="setTheme('tactical', this)">Style B: Tactical Neo-Utility</button>
+  </div>
+
+  <!-- Screen Tabs -->
+  <div class="tab-bar">
+    <button class="tab-item active" onclick="showScreen('setup', this)">1. Setup & Formula</button>
+    <button class="tab-item" onclick="showScreen('console', this)">2. Treadmill Console</button>
+    <button class="tab-item" onclick="showScreen('history', this)">3. Progress History</button>
+  </div>
+
+  <!-- Physical Phone Frame -->
+  <div class="device-container" id="phone-container">
+    <div class="device-notch"></div>
+
+    <!-- SCREEN 1: Setup & Profile -->
+    <div class="screen active" id="view-setup">
+      <!-- MAF Hero Card -->
+      <div class="maf-hero-card">
+        <div style="font-size: 11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px;">Calculated MAF Ceiling</div>
+        <div class="hero-meta">
+          <div class="hero-number" id="maf-hero-num">140<span>BPM</span></div>
+          <div class="range-pills">
+            <div>Target: <b id="range-target">135 - 140</b></div>
+            <div>Floor: <b id="range-floor">130 bpm</b></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 180 Formula Input -->
+      <div class="ui-card">
+        <div class="card-label">
+          <span>Runner Profile</span>
+          <span style="font-size:11px; color:var(--text-secondary);">180 Formula</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <span style="font-size:13px; font-weight:600;">Your Age</span>
+          <input type="number" id="age-input" value="35" style="width:60px; background:#1C1D22; border:1px solid #333; color:#fff; font-size:16px; font-weight:700; text-align:center; padding:6px; border-radius:6px;" oninput="recalcMAF()">
+        </div>
+
+        <div style="font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:6px;">Training & Health Category:</div>
+        <div class="category-grid">
+          <div class="cat-btn" onclick="setCategory(-10, this)">
+            <div class="badge-val">-10 BPM</div>
+            <div class="badge-name">Illness / Rehab</div>
+          </div>
+          <div class="cat-btn selected" onclick="setCategory(-5, this)">
+            <div class="badge-val">-5 BPM</div>
+            <div class="badge-name">Beginner / Return</div>
+          </div>
+          <div class="cat-btn" onclick="setCategory(0, this)">
+            <div class="badge-val">0 BPM</div>
+            <div class="badge-name">Consistent Base</div>
+          </div>
+          <div class="cat-btn" onclick="setCategory(5, this)">
+            <div class="badge-val">+5 BPM</div>
+            <div class="badge-name">Advanced / Pro</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Coospo H9Z Sensor -->
+      <div class="ui-card">
+        <div class="card-label">
+          <span>Heart Rate Strap</span>
+          <span style="font-size:11px; color:var(--color-emerald); font-weight:700;">PAIRED</span>
+        </div>
+        <div class="status-row">
+          <div class="led-indicator"></div>
+          <div>
+            <div style="font-size:14px; font-weight:700;">Coospo H9Z</div>
+            <div style="font-size:11px; color:var(--text-secondary); font-family:var(--font-mono);">BLE 0x180D • Auto-Connects</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Microphone Cadence -->
+      <div class="ui-card">
+        <div class="card-label">
+          <span>Acoustic Cadence (Mic)</span>
+          <span style="font-size:11px; color:#38BDF8; font-weight:700;">ACTIVE</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--text-secondary);">
+          <span>Filters treadmill motor noise</span>
+          <span style="font-weight:700; color:#fff;">Sensitivity: High</span>
+        </div>
+      </div>
+
+      <button class="cta-btn" onclick="showScreen('console', document.querySelectorAll('.tab-item')[1])">
+        <span>Start Treadmill Run</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+
+    <!-- SCREEN 2: Treadmill Console View -->
+    <div class="screen console-inzone" id="view-console">
+      <div class="top-status-bar">
+        <div class="device-chip">
+          <div class="led-indicator"></div> Coospo H9Z
+        </div>
+        <div class="device-chip" id="chip-zone-text" style="color:var(--color-emerald);">
+          MAF OPTIMAL
+        </div>
+      </div>
+
+      <div class="state-banner banner-emerald" id="live-state-banner">
+        Aerobic Target • Keep Steady
+      </div>
+
+      <!-- Centerpiece BPM Display -->
+      <div class="bpm-container">
+        <div class="bpm-meta-label">Current Heart Rate</div>
+        <div class="bpm-huge-val" id="live-bpm-val">138</div>
+        <div class="bpm-zone-reference">MAF Ceiling: <b>140 BPM</b> (Floor: 130)</div>
+      </div>
+
+      <!-- Secondary Metrics -->
+      <div class="dual-metric-grid">
+        <div class="metric-card">
+          <div class="m-caption">Acoustic Cadence</div>
+          <div class="m-number" id="live-cadence-val">180 <small>SPM</small></div>
+        </div>
+        <div class="metric-card">
+          <div class="m-caption">Elapsed Time</div>
+          <div class="m-number">28:45</div>
+        </div>
+      </div>
+
+      <!-- Zone Distribution Meter -->
+      <div class="ui-card" style="padding:10px 14px; margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:var(--text-secondary);">
+          <span>Zone Time</span>
+          <span style="color:var(--color-emerald);">91% in MAF</span>
+        </div>
+        <div class="zone-track">
+          <div class="seg-under" style="width: 6%;"></div>
+          <div class="seg-inzone" style="width: 91%;"></div>
+          <div class="seg-over" style="width: 3%;"></div>
+        </div>
+      </div>
+
+      <!-- Big Sweat-Friendly Buttons -->
+      <div class="btn-duo">
+        <button class="btn-secondary" onclick="togglePauseBtn(this)">Pause</button>
+        <button class="btn-finish" onclick="showScreen('history', document.querySelectorAll('.tab-item')[2])">Finish Run</button>
+      </div>
+    </div>
+
+    <!-- SCREEN 3: History & MAF Benchmark -->
+    <div class="screen" id="view-history">
+      <div class="ui-card" style="background:#16181D;">
+        <div class="card-label">
+          <span>MAF Test Progress</span>
+          <span style="background:#332400; color:#FACC15; font-size:10px; font-weight:800; padding:2px 8px; border-radius:4px;">BENCHMARK</span>
+        </div>
+        <div style="font-size:16px; font-weight:800; color:#38BDF8; margin-bottom:4px;">+0.4 km/h faster at 140 BPM</div>
+        <div style="font-size:12px; color:var(--text-secondary); line-height:1.4;">Aerobic speed increased from 8.1 to 8.5 km/h while keeping heart rate strictly within zone.</div>
+      </div>
+
+      <div style="font-size:11px; font-weight:800; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.8px; margin:8px 0;">Workout History</div>
+
+      <div class="ui-card" style="margin-bottom:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <div><b style="font-size:13px;">Today</b> <span style="font-size:10px; background:#332400; color:#FACC15; font-weight:800; padding:2px 6px; border-radius:4px; margin-left:4px;">MAF TEST</span></div>
+          <span style="font-size:12px; color:var(--color-emerald); font-weight:800;">91% In Zone</span>
+        </div>
+        <div style="font-size:12px; color:var(--text-secondary); display:flex; justify-content:space-between;">
+          <span>35:00 min</span>
+          <span>Avg: 138 bpm</span>
+          <span>Cadence: 180 spm</span>
+        </div>
+        <div style="font-size:11px; color:#38BDF8; margin-top:6px; font-weight:600;">Treadmill: 8.5 km/h • 4.95 km</div>
+      </div>
+
+      <div class="ui-card" style="margin-bottom:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <div><b style="font-size:13px;">Oct 28</b></div>
+          <span style="font-size:12px; color:var(--color-emerald); font-weight:800;">94% In Zone</span>
+        </div>
+        <div style="font-size:12px; color:var(--text-secondary); display:flex; justify-content:space-between;">
+          <span>40:00 min</span>
+          <span>Avg: 137 bpm</span>
+          <span>Cadence: 178 spm</span>
+        </div>
+        <div style="font-size:11px; color:#38BDF8; margin-top:6px; font-weight:600;">Treadmill: 8.3 km/h • 5.53 km</div>
+      </div>
+
+      <button class="cta-btn" style="background:#1C1D22; color:#FFF; border:1px solid var(--border-subtle); padding:12px;" onclick="alert('Exported workouts to CSV & TCX!')">
+        Export CSV & TCX
+      </button>
+    </div>
+  </div>
+
+  <!-- Live Simulation Dock -->
+  <div class="simulator-tray">
+    <div class="tray-header">
+      <span>Live Heart Rate Tester</span>
+      <span id="tray-indicator">138 BPM</span>
+    </div>
+    <div class="tray-slider">
+      <input type="range" id="sim-slider" min="115" max="170" value="138" oninput="simConsoleHR(this.value)">
+    </div>
+  </div>
+
+  <script>
+    let age = 35;
+    let categoryOffset = -5;
+    let ceiling = 140;
+
+    function recalcMAF() {
+      age = parseInt(document.getElementById('age-input').value) || 35;
+      ceiling = (180 - age) + categoryOffset;
+      const floor = ceiling - 10;
+      const targetMin = ceiling - 5;
+
+      document.getElementById('maf-hero-num').innerHTML = ceiling + '<span>BPM</span>';
+      document.getElementById('range-target').innerText = targetMin + ' - ' + ceiling;
+      document.getElementById('range-floor').innerText = floor + ' bpm';
+    }
+
+    function setCategory(offset, el) {
+      document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
+      el.classList.add('selected');
+      categoryOffset = offset;
+      recalcMAF();
+    }
+
+    function showScreen(id, tab) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+      
+      document.getElementById('view-' + id).classList.add('active');
+      tab.classList.add('active');
+    }
+
+    function setTheme(theme, btn) {
+      document.querySelectorAll('.style-chip').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      if (theme === 'tactical') {
+        document.body.classList.add('theme-tactical');
+      } else {
+        document.body.classList.remove('theme-tactical');
+      }
+    }
+
+    function simConsoleHR(val) {
+      document.getElementById('tray-indicator').innerText = val + ' BPM';
+      document.getElementById('live-bpm-val').innerText = val;
+
+      const consoleView = document.getElementById('view-console');
+      const banner = document.getElementById('live-state-banner');
+      const chipText = document.getElementById('chip-zone-text');
+      const floor = ceiling - 10;
+
+      consoleView.classList.remove('console-under', 'console-inzone', 'console-over');
+      banner.classList.remove('banner-cyan', 'banner-emerald', 'banner-crimson');
+
+      if (val >= ceiling) {
+        consoleView.classList.add('console-over');
+        banner.classList.add('banner-crimson');
+        banner.innerText = 'OVER MAF CEILING • SLOW TO A WALK NOW';
+        chipText.innerText = 'ALERT: OVER';
+        chipText.style.color = 'var(--color-crimson)';
+      } else if (val < floor) {
+        consoleView.classList.add('console-under');
+        banner.classList.add('banner-cyan');
+        banner.innerText = 'BELOW AEROBIC FLOOR • INCREASE PACE';
+        chipText.innerText = 'BELOW FLOOR';
+        chipText.style.color = 'var(--color-cyan)';
+      } else {
+        consoleView.classList.add('console-inzone');
+        banner.classList.add('banner-emerald');
+        banner.innerText = 'AEROBIC TARGET • KEEP STEADY';
+        chipText.innerText = 'MAF OPTIMAL';
+        chipText.style.color = 'var(--color-emerald)';
+      }
+    }
+
+    function togglePauseBtn(btn) {
+      if (btn.innerText === 'Pause') {
+        btn.innerText = 'Resume';
+        btn.style.background = '#2563EB';
+      } else {
+        btn.innerText = 'Pause';
+        btn.style.background = '#1C1D22';
+      }
+    }
+
+    recalcMAF();
+  </script>
+</body>
+</html>
