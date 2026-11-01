@@ -41,32 +41,32 @@
   - `WorkoutDatabaseHelper` at `DATABASE_VERSION = 2` with `ALTER TABLE` migration.
   - `WorkoutRepository.updateWorkoutDetails(workoutId, durationSec, speed, distance, isBenchmark)`.
 
-- [ ] **Step 1: Write the failing unit tests for schema v2 fields and repository duration update**
+- [x] **Step 1: Write the failing unit tests for schema v2 fields and repository duration update**
   In `WorkoutEntityTest.kt`, add tests asserting:
   - Default values for `isGuidedTest` (false), `recoveryDrop60` (null), `recoveryDrop120` (null).
   - Construction with guided test recovery values.
   - Duration calculation with custom `durationSec`.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
   Run: `.\gradlew.bat testDebugUnitTest --tests com.mafrunner.app.data.WorkoutEntityTest --console=plain`
   Expected: FAIL (missing fields in `WorkoutEntity`).
 
-- [ ] **Step 3: Update `WorkoutEntity.kt` with guided test and recovery fields**
+- [x] **Step 3: Update `WorkoutEntity.kt` with guided test and recovery fields**
   Add `isGuidedTest: Boolean = false`, `targetDurationSec: Long = 0L`, `recoveryPeakHr: Int? = null`, `recoveryHr60: Int? = null`, `recoveryHr120: Int? = null`, `recoveryDrop60: Int? = null`, `recoveryDrop120: Int? = null`.
 
-- [ ] **Step 4: Update `WorkoutDatabaseHelper.kt` for Version 2**
+- [x] **Step 4: Update `WorkoutDatabaseHelper.kt` for Version 2**
   Set `DATABASE_VERSION = 2`. Add column constants `COL_IS_GUIDED_TEST`, `COL_TARGET_DURATION_SEC`, `COL_RECOVERY_HR_PEAK`, `COL_RECOVERY_HR_60`, `COL_RECOVERY_HR_120`, `COL_RECOVERY_DROP_60`, `COL_RECOVERY_DROP_120`. In `onCreate`, include them in `CREATE TABLE workouts`. In `onUpgrade`, execute `ALTER TABLE workouts ADD COLUMN ...` when `oldVersion < 2`.
 
-- [ ] **Step 5: Update `WorkoutRepository.kt`**
+- [x] **Step 5: Update `WorkoutRepository.kt`**
   - Read new columns from cursor in `refreshWorkouts()`.
   - Write new columns in `saveWorkout()`.
   - Add optional `durationSec: Long? = null` parameter to `updateWorkoutDetails()` to update `COL_DURATION_SEC` when non-null.
 
-- [ ] **Step 6: Run tests to verify they pass**
+- [x] **Step 6: Run tests to verify they pass**
   Run: `.\gradlew.bat testDebugUnitTest --tests com.mafrunner.app.data.WorkoutEntityTest --console=plain`
   Expected: PASS.
 
-- [ ] **Step 7: Commit changes**
+- [x] **Step 7: Commit changes**
   ```bash
   git add app/src/main/kotlin/com/mafrunner/app/data/ local/
   git commit -m "feat(data): upgrade database to v2 with guided test and recovery schema"
@@ -87,7 +87,7 @@
   - `TestPhase` enum (`FREE_RUN`, `WARMUP`, `TEST_STEADY`, `RECOVERY`, `COMPLETE`).
   - `TestProtocolEngine` managing countdowns, phase transitions, steady-metric isolation, and recovery sampling.
 
-- [ ] **Step 1: Write the failing tests for `TestProtocolEngine`**
+- [x] **Step 1: Write the failing tests for `TestProtocolEngine`**
   In `TestProtocolEngineTest.kt`, test:
   - Starting guided test with 5m warmup and 30m steady test begins in `WARMUP`.
   - Ticking seconds transitions `WARMUP` -> `TEST_STEADY` at 0s.
@@ -97,11 +97,11 @@
   - In `RECOVERY`, samples HR at $T=60s$ and $T=120s$, computing $\Delta HR_{60}$ and $\Delta HR_{120}$.
   - At $T=120s$, transitions to `COMPLETE`.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
   Run: `.\gradlew.bat testDebugUnitTest --tests com.mafrunner.app.domain.TestProtocolEngineTest --console=plain`
   Expected: FAIL (`TestProtocolEngine` unresolved).
 
-- [ ] **Step 3: Implement `TestPhase.kt`**
+- [x] **Step 3: Implement `TestPhase.kt`**
   ```kotlin
   package com.mafrunner.app.domain
 
@@ -114,7 +114,7 @@
   }
   ```
 
-- [ ] **Step 4: Implement `TestProtocolEngine.kt`**
+- [x] **Step 4: Implement `TestProtocolEngine.kt`**
   Implement state machine managing:
   - `currentPhase: TestPhase`
   - `phaseRemainingSeconds: Long`
@@ -125,11 +125,11 @@
   - Isolated steady metrics: `testAvgHr`, `testAvgCadence`, `testInZonePercentage`.
   - Recovery stats: `peakHr`, `hr60`, `hr120`, `drop60`, `drop120`.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
   Run: `.\gradlew.bat testDebugUnitTest --tests com.mafrunner.app.domain.TestProtocolEngineTest --console=plain`
   Expected: PASS.
 
-- [ ] **Step 6: Commit changes**
+- [x] **Step 6: Commit changes**
   ```bash
   git add app/src/main/kotlin/com/mafrunner/app/domain/TestPhase.kt app/src/main/kotlin/com/mafrunner/app/domain/TestProtocolEngine.kt app/src/test/java/com/mafrunner/app/domain/TestProtocolEngineTest.kt
   git commit -m "feat(domain): implement test protocol state machine and metric isolator"
@@ -157,32 +157,32 @@
     - `speakRecoveryStart()`
     - `speakRecoveryComplete(drop60: Int, drop120: Int)`
 
-- [ ] **Step 1: Write unit tests for speech coaching rate limiting & prompt formatting**
+- [x] **Step 1: Write unit tests for speech coaching rate limiting & prompt formatting**
   In `SpeechCoachEngineTest.kt`, test:
   - Formatting of ceiling alert: `"Heart rate high at 145 BPM. Ease back your pace."`
   - Formatting of floor alert: `"Heart rate low at 132 BPM. Pick up your pace."`
   - 20-second cooldown gate: Calling ceiling warning twice within 10 seconds only triggers speech once.
   - Phase transition prompts format duration and drop metrics cleanly.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
   Run: `.\gradlew.bat testDebugUnitTest --tests com.mafrunner.app.audio.SpeechCoachEngineTest --console=plain`
   Expected: FAIL (`SpeechCoachEngine` unresolved).
 
-- [ ] **Step 3: Implement `SpeechCoachEngine.kt`**
+- [x] **Step 3: Implement `SpeechCoachEngine.kt`**
   Implement using Android `TextToSpeech` with:
   - `TextToSpeech.OnInitListener` with `Locale.US` fallback.
   - Rate limiting timestamp check (`lastSpeechTimestampMs`).
   - `QUEUE_FLUSH` for urgent ceiling alerts, `QUEUE_ADD` for phase announcements.
   - Audio focus request for speech transient ducking.
 
-- [ ] **Step 4: Integrate with `AudioAlertEngine.kt`**
+- [x] **Step 4: Integrate with `AudioAlertEngine.kt`**
   Add `speechCoach: SpeechCoachEngine` property and delegate spoken coaching calls cleanly alongside tone beeps.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
   Run: `.\gradlew.bat testDebugUnitTest --tests com.mafrunner.app.audio.SpeechCoachEngineTest --console=plain`
   Expected: PASS.
 
-- [ ] **Step 6: Commit changes**
+- [x] **Step 6: Commit changes**
   ```bash
   git add app/src/main/kotlin/com/mafrunner/app/audio/
   git commit -m "feat(audio): add text-to-speech coaching engine with 20s rate limiting"
@@ -208,17 +208,17 @@
     - `finishToRecoveryEarly()`
   - High-priority background notification on recovery completion.
 
-- [ ] **Step 1: Write failing tests for `WorkoutSessionState`**
+- [x] **Step 1: Write failing tests for `WorkoutSessionState`**
   In `WorkoutSessionStateTest.kt`, test state formatting with `TestPhase`, phase countdown string (`18:42`), and recovery drop properties.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
   Run: `.\gradlew.bat testDebugUnitTest --tests com.mafrunner.app.service.WorkoutSessionStateTest --console=plain`
   Expected: FAIL.
 
-- [ ] **Step 3: Update `WorkoutSessionState.kt`**
+- [x] **Step 3: Update `WorkoutSessionState.kt`**
   Add `isGuidedTest: Boolean = false`, `testPhase: TestPhase = TestPhase.FREE_RUN`, `phaseRemainingSeconds: Long = 0L`, `targetTestDurationSeconds: Long = 0L`, `recoveryPeakHr: Int? = null`, `recoveryHr60: Int? = null`, `recoveryHr120: Int? = null`, `recoveryDrop60: Int? = null`, `recoveryDrop120: Int? = null`.
 
-- [ ] **Step 4: Update `WorkoutTrackingService.kt`**
+- [x] **Step 4: Update `WorkoutTrackingService.kt`**
   - Integrate `TestProtocolEngine`.
   - Wire `timerJob` tick loop to advance protocol engine every 1000ms.
   - Wire out-of-zone transitions to trigger `speechCoach.speakCeilingWarning()` and `speakFloorWarning()` with rate limit.
@@ -226,11 +226,11 @@
   - When `RECOVERY` completes ($T=120s$), play completion chime, trigger recovery summary speech, post high-priority completion notification, and trigger auto-save or UI prompt.
   - In `finishWorkout()`, save guided test fields (`is_guided_test = 1`, `recovery_drop_60`, `recovery_drop_120`, and isolated steady-phase `avgHr`, `avgCadence`, `inZonePercentage`).
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
   Run: `.\gradlew.bat testDebugUnitTest --tests com.mafrunner.app.service.WorkoutSessionStateTest --console=plain`
   Expected: PASS.
 
-- [ ] **Step 6: Commit changes**
+- [x] **Step 6: Commit changes**
   ```bash
   git add app/src/main/kotlin/com/mafrunner/app/service/
   git commit -m "feat(service): wire guided test state machine and recovery lifecycle in service"
@@ -251,28 +251,28 @@
   - `TestSetupDialog`: Modal to select Free Run vs Guided MAF Test, Warmup (Skip/5m/10m), Presets (20m/30m/45m/60m), and custom stepper (`-5m`, `-1m`, `+1m`, `+5m`).
   - `ConsoleScreen` phased header showing stepper `[WARMUP]` -> `[TEST]` -> `[RECOVERY]`, live countdown timer, and `+5m`/`-5m` quick duration adjust buttons.
 
-- [ ] **Step 1: Create `TestSetupDialog.kt`**
+- [x] **Step 1: Create `TestSetupDialog.kt`**
   Build Nordic OLED dialog with:
   - Mode selector: "Free Run" vs "Guided MAF Test".
   - Warmup duration chips: `Skip`, `5 min`, `10 min`.
   - Target duration presets (`20m`, `30m`, `45m`, `60m`) and fine-grained stepper buttons (`-5m`, `-1m`, `+1m`, `+5m`) with custom minute display.
   - "START TEST" action callback `onStartTest(warmupSec, testSec)`.
 
-- [ ] **Step 2: Update `ConsoleScreen.kt`**
+- [x] **Step 2: Update `ConsoleScreen.kt`**
   - Add Phased Header bar at the top of the console when `isGuidedTest` is true.
   - Display phase badge and countdown timer in monospace.
   - In `WARMUP` phase: Display "Skip to Test" button.
   - In `TEST_STEADY` phase: Display `+5m` and `-5m` adjustment pills.
   - In `RECOVERY` phase: Display 2-minute standing countdown ring with peak HR and live drop. Disable pause button during recovery.
 
-- [ ] **Step 3: Wire in `MainActivity.kt`**
+- [x] **Step 3: Wire in `MainActivity.kt`**
   Wire start button to open `TestSetupDialog` before launching session, and wire `onSkipWarmup`, `onAdjustDuration`, and `onFinishEarlyToRecovery`.
 
-- [ ] **Step 4: Verify Compilation**
+- [x] **Step 4: Verify Compilation**
   Run: `.\gradlew.bat compileDebugKotlin --console=plain`
   Expected: BUILD SUCCESSFUL.
 
-- [ ] **Step 5: Commit changes**
+- [x] **Step 5: Commit changes**
   ```bash
   git add app/src/main/kotlin/com/mafrunner/app/ui/screens/TestSetupDialog.kt app/src/main/kotlin/com/mafrunner/app/ui/screens/ConsoleScreen.kt app/src/main/kotlin/com/mafrunner/app/MainActivity.kt
   git commit -m "feat(ui): add guided test setup sheet and console phased header"
@@ -296,31 +296,31 @@
   - `HistoryScreen` displaying guided test badge and recovery drops.
   - `WorkoutAnalyticsEngine` calculating average recovery drop trends across periods.
 
-- [ ] **Step 1: Write unit tests for recovery analytics in `WorkoutAnalyticsEngineTest.kt`**
+- [x] **Step 1: Write unit tests for recovery analytics in `WorkoutAnalyticsEngineTest.kt`**
   Test period analytics computing average $\Delta HR_{60}$ and $\Delta HR_{120}$ across guided test workouts in the selected horizon.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
   Run: `.\gradlew.bat testDebugUnitTest --tests com.mafrunner.app.domain.WorkoutAnalyticsEngineTest --console=plain`
   Expected: FAIL.
 
-- [ ] **Step 3: Update `WorkoutAnalyticsEngine.kt`**
+- [x] **Step 3: Update `WorkoutAnalyticsEngine.kt`**
   Add `avgRecoveryDrop60: Int?` and `avgRecoveryDrop120: Int?` to `PeriodAnalytics`. Calculate averages for workouts where `isGuidedTest == true` and recovery drops are non-null.
 
-- [ ] **Step 4: Update `WorkoutDetailDialog.kt`**
+- [x] **Step 4: Update `WorkoutDetailDialog.kt`**
   - Add editable `Duration (minutes / seconds)` input field alongside treadmill speed and distance.
   - Add Cardiac Recovery Card showing $\Delta HR_{60}$ and $\Delta HR_{120}$ with color-coded classification (Green: $\ge 25$ bpm, Cyan: $15-24$ bpm, Amber: $<15$ bpm).
   - Update `onSave` callback to pass edited `durationSec`.
 
-- [ ] **Step 5: Update `HistoryScreen.kt` and `PostRunSummaryDialog.kt`**
+- [x] **Step 5: Update `HistoryScreen.kt` and `PostRunSummaryDialog.kt`**
   - Display `[MAF TEST]` badge on guided test history list items.
   - Display $\Delta HR_{60}$ recovery drop chip directly on the history card.
   - Show recovery results in `PostRunSummaryDialog` when finishing a guided test.
 
-- [ ] **Step 6: Run tests to verify they pass**
+- [x] **Step 6: Run tests to verify they pass**
   Run: `.\gradlew.bat testDebugUnitTest --tests com.mafrunner.app.domain.WorkoutAnalyticsEngineTest --console=plain`
   Expected: PASS.
 
-- [ ] **Step 7: Commit changes**
+- [x] **Step 7: Commit changes**
   ```bash
   git add app/src/main/kotlin/com/mafrunner/app/ui/screens/WorkoutDetailDialog.kt app/src/main/kotlin/com/mafrunner/app/ui/screens/HistoryScreen.kt app/src/main/kotlin/com/mafrunner/app/ui/screens/PostRunSummaryDialog.kt app/src/main/kotlin/com/mafrunner/app/domain/WorkoutAnalyticsEngine.kt app/src/test/java/com/mafrunner/app/domain/WorkoutAnalyticsEngineTest.kt
   git commit -m "feat(ui): add cardiac recovery card and editable duration to history"
@@ -333,22 +333,22 @@
 **Files:**
 - Output: `MAFRunner.apk` (project root)
 
-- [ ] **Step 1: Run full unit test suite**
+- [x] **Step 1: Run full unit test suite**
   Run: `.\gradlew.bat test --console=plain`
   Expected: BUILD SUCCESSFUL (all test classes pass).
 
-- [ ] **Step 2: Assemble Debug APK**
+- [x] **Step 2: Assemble Debug APK**
   Run: `.\gradlew.bat assembleDebug --console=plain`
   Expected: BUILD SUCCESSFUL.
 
-- [ ] **Step 3: Copy binary to root `MAFRunner.apk`**
+- [x] **Step 3: Copy binary to root `MAFRunner.apk`**
   Run: `Copy-Item "app/build/outputs/apk/debug/app-debug.apk" -Destination "MAFRunner.apk" -Force`
 
-- [ ] **Step 4: Verify APK timestamp and size**
+- [x] **Step 4: Verify APK timestamp and size**
   Run: `Get-Item MAFRunner.apk | Select-Object Name, Length, LastWriteTime`
   Expected: Size ~31MB, current timestamp.
 
-- [ ] **Step 5: Commit final deliverable**
+- [x] **Step 5: Commit final deliverable**
   ```bash
   git add MAFRunner.apk docs/superpowers/plans/
   git commit -m "chore: assemble fresh APK with guided maf test and cardiac recovery engine"

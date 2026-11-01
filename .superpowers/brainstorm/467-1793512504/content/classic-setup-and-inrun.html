@@ -1,0 +1,106 @@
+<h2>Guided MAF Test: Setup & Live Console Flow</h2>
+<p class="subtitle">Detailed interface for Option 1: Configurable duration, live HR & cadence coaching, and recovery tracking</p>
+
+<div class="split" style="gap: 1.5rem; margin-bottom: 2rem;">
+  
+  <!-- LEFT: SETUP MODAL -->
+  <div class="mockup">
+    <div class="mockup-header" style="display: flex; justify-content: space-between;">
+      <span>1. TEST SETUP SHEET</span>
+      <span style="color: #00E676;">PRE-RUN CONFIG</span>
+    </div>
+    <div class="mockup-body" style="background: #000; color: #fff; font-family: sans-serif;">
+      
+      <div style="font-size: 0.75rem; color: #888; text-transform: uppercase; margin-bottom: 6px;">Workout Mode</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1.25rem;">
+        <button style="background: #151515; border: 1px solid #333; color: #888; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 0.85rem;">Free Run</button>
+        <button style="background: #00E676; border: 1px solid #00E676; color: #000; padding: 10px; border-radius: 6px; font-weight: 800; font-size: 0.85rem;">Guided MAF Test</button>
+      </div>
+
+      <div style="font-size: 0.75rem; color: #888; text-transform: uppercase; margin-bottom: 6px;">Warmup Duration</div>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 1.25rem;">
+        <button style="background: #151515; border: 1px solid #333; color: #aaa; padding: 8px; border-radius: 6px; font-size: 0.8rem;">Skip</button>
+        <button style="background: #00D2FF; border: 1px solid #00D2FF; color: #000; padding: 8px; border-radius: 6px; font-weight: bold; font-size: 0.8rem;">5 min</button>
+        <button style="background: #151515; border: 1px solid #333; color: #aaa; padding: 8px; border-radius: 6px; font-size: 0.8rem;">10 min</button>
+      </div>
+
+      <div style="font-size: 0.75rem; color: #888; text-transform: uppercase; margin-bottom: 6px;">Target Test Duration</div>
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 1.25rem;">
+        <button style="background: #151515; border: 1px solid #333; color: #aaa; padding: 8px; border-radius: 6px; font-size: 0.8rem;">20 min</button>
+        <button style="background: #00E676; border: 1px solid #00E676; color: #000; padding: 8px; border-radius: 6px; font-weight: bold; font-size: 0.8rem;">30 min</button>
+        <button style="background: #151515; border: 1px solid #333; color: #aaa; padding: 8px; border-radius: 6px; font-size: 0.8rem;">45 min</button>
+        <button style="background: #151515; border: 1px solid #333; color: #aaa; padding: 8px; border-radius: 6px; font-size: 0.8rem;">60 min</button>
+      </div>
+
+      <div style="background: #111; border: 1px solid #222; border-radius: 8px; padding: 10px; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <div style="font-size: 0.85rem; font-weight: bold; color: #fff;">Post-Run 2m Recovery</div>
+          <div style="font-size: 0.7rem; color: #888;">Auto-records &Delta;HR 60s & 120s drops</div>
+        </div>
+        <div style="width: 38px; height: 20px; background: #00E676; border-radius: 10px; position: relative; cursor: pointer;">
+          <div style="width: 16px; height: 16px; background: #000; border-radius: 50%; position: absolute; right: 2px; top: 2px;"></div>
+        </div>
+      </div>
+
+      <button style="width: 100%; background: #00E676; color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: 800; font-size: 1rem; cursor: pointer; letter-spacing: 0.05em;">START GUIDED TEST</button>
+    </div>
+  </div>
+
+  <!-- RIGHT: IN-RUN LIVE CONSOLE -->
+  <div class="mockup">
+    <div class="mockup-header" style="display: flex; justify-content: space-between;">
+      <span>2. LIVE COACHING CONSOLE</span>
+      <span style="color: #00D2FF;">IN-RUN (PHASE 2)</span>
+    </div>
+    <div class="mockup-body" style="background: #000; color: #fff; font-family: monospace;">
+      
+      <!-- PHASE STEPPER -->
+      <div style="display: flex; justify-content: space-between; gap: 4px; margin-bottom: 1rem; font-size: 0.65rem;">
+        <div style="flex: 1; background: #00D2FF; color: #000; padding: 4px; border-radius: 4px; text-align: center; font-weight: bold;">✓ WARMUP 5M</div>
+        <div style="flex: 2; background: #00E676; color: #000; padding: 4px; border-radius: 4px; text-align: center; font-weight: 900;">● TEST 18:42 REMAINING</div>
+        <div style="flex: 1; background: #1a1a1a; color: #666; padding: 4px; border-radius: 4px; text-align: center;">RECOVERY 2M</div>
+      </div>
+
+      <!-- DUAL TELEMETRY: HR + CADENCE -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1rem;">
+        
+        <!-- HEART RATE -->
+        <div style="background: #0d0d0d; border: 2px solid #00E676; border-radius: 10px; padding: 12px; text-align: center;">
+          <div style="font-size: 0.65rem; color: #888; text-transform: uppercase;">Heart Rate</div>
+          <div style="font-size: 2.8rem; font-weight: 900; color: #00E676; line-height: 1; margin: 4px 0;">141</div>
+          <div style="font-size: 0.7rem; color: #00E676; font-weight: bold;">IN ZONE (137-147)</div>
+        </div>
+
+        <!-- CADENCE -->
+        <div style="background: #0d0d0d; border: 1px solid #333; border-radius: 10px; padding: 12px; text-align: center;">
+          <div style="font-size: 0.65rem; color: #888; text-transform: uppercase;">Cadence</div>
+          <div style="font-size: 2.8rem; font-weight: 900; color: #00D2FF; line-height: 1; margin: 4px 0;">178</div>
+          <div style="font-size: 0.7rem; color: #888;">STEADY SPM</div>
+        </div>
+
+      </div>
+
+      <!-- VOICE COACH BANNER -->
+      <div style="background: #111; border-left: 4px solid #00E676; padding: 8px 12px; border-radius: 0 6px 6px 0; margin-bottom: 1rem; font-size: 0.75rem; color: #00E676; font-family: sans-serif;">
+        <strong>🎙️ Audio Coach (Spoken via TTS):</strong><br>
+        <span style="color: #ddd;">"18 minutes remaining. HR is 141, right in the zone. Cadence is 178."</span>
+      </div>
+
+      <!-- ZONE TIME DISTRIBUTION -->
+      <div style="font-size: 0.65rem; color: #888; margin-bottom: 4px; display: flex; justify-content: space-between;">
+        <span>UNDER (2%)</span>
+        <span style="color: #00E676; font-weight: bold;">IN ZONE (96%)</span>
+        <span>OVER (2%)</span>
+      </div>
+      <div style="height: 8px; background: #222; border-radius: 4px; display: flex; overflow: hidden; margin-bottom: 1rem;">
+        <div style="width: 2%; background: #00D2FF;"></div>
+        <div style="width: 96%; background: #00E676;"></div>
+        <div style="width: 2%; background: #FF3B30;"></div>
+      </div>
+
+      <!-- STOP / FINISH BUTTON -->
+      <button style="width: 100%; background: #1a1a1a; border: 1px solid #FF3B30; color: #FF3B30; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 0.85rem;">ABORT TEST</button>
+    </div>
+  </div>
+
+</div>

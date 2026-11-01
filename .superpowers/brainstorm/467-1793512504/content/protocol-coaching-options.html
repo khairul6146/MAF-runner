@@ -1,0 +1,152 @@
+<h2>Guided MAF Test Protocol & Coaching Flow</h2>
+<p class="subtitle">Explore how the coach guides your treadmill workout and measures your aerobic recovery</p>
+
+<!-- VISUAL COMPARISON CARDS -->
+<div class="cards" style="margin-bottom: 2rem;">
+  
+  <!-- OPTION A -->
+  <div class="card" data-choice="classic" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #000000; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; border-bottom: 1px solid #222;">
+      <div style="display: flex; justify-content: space-between; width: 100%; font-size: 0.75rem; color: #888; font-family: monospace;">
+        <span style="color: #00E676; font-weight: bold;">● PHASE 2 / 3</span>
+        <span>MAF TEST: 24:18 REMAINING</span>
+      </div>
+      <div style="text-align: center; margin: 0.75rem 0;">
+        <div style="font-size: 2.5rem; font-weight: 800; color: #00E676; font-family: monospace; line-height: 1;">141 <span style="font-size: 1rem; color: #888;">BPM</span></div>
+        <div style="font-size: 0.75rem; color: #aaa; margin-top: 4px;">TARGET: 142 ± 3 BPM (ZONE LOCKED)</div>
+      </div>
+      <div style="background: #111; border: 1px solid #333; border-radius: 6px; padding: 6px 10px; font-size: 0.75rem; color: #00D2FF; text-align: center;">
+        🎙️ "Pace is optimal. Hold this cadence (178 SPM)."
+      </div>
+    </div>
+    <div class="card-body">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+        <h3 style="margin: 0; color: #00E676;">Option A: Classic 3-Phase Protocol</h3>
+        <span class="label" style="background: rgba(0,230,118,0.15); color: #00E676; padding: 2px 6px; border-radius: 4px;">Standard Maffetone</span>
+      </div>
+      <p>Automates Dr. Maffetone's classic benchmark: <strong>Warmup (10m) &rarr; Continuous Steady MAF (30m or 45m) &rarr; Stand-still Recovery (2m)</strong>.</p>
+      <div style="margin-top: 0.75rem; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4;">
+        &bull; <strong>Warmup:</strong> Prompts you to gradually ramp treadmill until HR reaches MAF zone.<br>
+        &bull; <strong>Steady Test:</strong> Timed lock. Alerts you the second you creep over MAF ceiling.<br>
+        &bull; <strong>Auto-Recovery:</strong> Auto-triggers a 2-min countdown upon completion to record 60s & 120s HR drop.
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTION B -->
+  <div class="card" data-choice="split" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #000000; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; border-bottom: 1px solid #222;">
+      <div style="display: flex; justify-content: space-between; width: 100%; font-size: 0.75rem; color: #888; font-family: monospace;">
+        <span style="color: #FFB800; font-weight: bold;">● LAP 2 OF 3</span>
+        <span>AEROBIC DECOUPLING: 3.2%</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; text-align: center; margin: 0.75rem 0;">
+        <div style="background: #111; padding: 6px; border-radius: 6px; border: 1px solid #222;">
+          <div style="font-size: 0.65rem; color: #888;">LAP 1</div>
+          <div style="font-size: 0.95rem; font-weight: bold; color: #fff;">10.2 <span style="font-size: 0.6rem;">km/h</span></div>
+          <div style="font-size: 0.65rem; color: #00E676;">141 bpm</div>
+        </div>
+        <div style="background: #111; padding: 6px; border-radius: 6px; border: 1px solid #FFB800;">
+          <div style="font-size: 0.65rem; color: #FFB800;">LAP 2 (LIVE)</div>
+          <div style="font-size: 0.95rem; font-weight: bold; color: #fff;">9.8 <span style="font-size: 0.6rem;">km/h</span></div>
+          <div style="font-size: 0.65rem; color: #00E676;">142 bpm</div>
+        </div>
+        <div style="background: #111; padding: 6px; border-radius: 6px; border: 1px solid #222; opacity: 0.5;">
+          <div style="font-size: 0.65rem; color: #888;">LAP 3</div>
+          <div style="font-size: 0.95rem; font-weight: bold; color: #fff;">--</div>
+          <div style="font-size: 0.65rem; color: #888;">Pending</div>
+        </div>
+      </div>
+      <div style="background: #111; border: 1px solid #333; border-radius: 6px; padding: 6px 10px; font-size: 0.75rem; color: #FFB800; text-align: center;">
+        🎙️ "Lap 1 complete at 10.2 km/h. Starting Lap 2."
+      </div>
+    </div>
+    <div class="card-body">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+        <h3 style="margin: 0; color: #FFB800;">Option B: Split-Lap Degradation Test</h3>
+        <span class="label" style="background: rgba(255,184,0,0.15); color: #FFB800; padding: 2px 6px; border-radius: 4px;">Interval Benchmark</span>
+      </div>
+      <p>Splits the benchmark into <strong>3 equal timed or distance laps</strong> (e.g. 3x 1-mile or 3x 10-minute splits).</p>
+      <div style="margin-top: 0.75rem; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4;">
+        &bull; <strong>Fatigue Tracking:</strong> In MAF testing, runners must reduce treadmill speed on subsequent laps to maintain a steady HR.<br>
+        &bull; <strong>Decoupling Metric:</strong> Calculates the speed degradation % between Lap 1 and Lap 3.<br>
+        &bull; <strong>Post-Run:</strong> Detailed split breakdown and cardiac recovery rate.
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTION C -->
+  <div class="card" data-choice="interactive" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #000000; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; border-bottom: 1px solid #222;">
+      <div style="display: flex; justify-content: space-between; width: 100%; font-size: 0.75rem; color: #888; font-family: monospace;">
+        <span style="color: #00D2FF; font-weight: bold;">● INTERACTIVE COACH</span>
+        <span>TEST: 18:30</span>
+      </div>
+      <div style="display: flex; justify-content: space-around; align-items: center; margin: 0.75rem 0;">
+        <div style="text-align: center;">
+          <div style="font-size: 0.7rem; color: #888;">HEART RATE</div>
+          <div style="font-size: 2rem; font-weight: 800; color: #00E676; font-family: monospace;">140</div>
+        </div>
+        <div style="text-align: center; border-left: 1px solid #222; padding-left: 1rem;">
+          <div style="font-size: 0.7rem; color: #888;">TREADMILL SPEED</div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button style="background: #222; border: 1px solid #444; color: #fff; border-radius: 4px; padding: 4px 8px; font-weight: bold;">-0.1</button>
+            <span style="font-size: 1.4rem; font-weight: 800; color: #fff; font-family: monospace;">9.6</span>
+            <button style="background: #222; border: 1px solid #444; color: #fff; border-radius: 4px; padding: 4px 8px; font-weight: bold;">+0.1</button>
+          </div>
+        </div>
+      </div>
+      <div style="background: #111; border: 1px solid #333; border-radius: 6px; padding: 6px 10px; font-size: 0.75rem; color: #00E676; text-align: center;">
+        🎙️ "HR is 140 (2 below target). Speed is on point."
+      </div>
+    </div>
+    <div class="card-body">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+        <h3 style="margin: 0; color: #00D2FF;">Option C: Live Speed Sync & Interactive Coaching</h3>
+        <span class="label" style="background: rgba(0,210,255,0.15); color: #00D2FF; padding: 2px 6px; border-radius: 4px;">Recommended</span>
+      </div>
+      <p>Combines the 3-phase test with <strong>direct on-screen treadmill speed adjusters (+/- 0.1 km/h)</strong> and active voice coaching.</p>
+      <div style="margin-top: 0.75rem; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4;">
+        &bull; <strong>Zero Post-Workout Data Entry:</strong> Automatically logs exact distance, pace curve, and average speed.<br>
+        &bull; <strong>Active Speed Advice:</strong> Audio coach tells you when to notch speed up or down by 0.1–0.2 km/h.<br>
+        &bull; <strong>Cardiac Recovery:</strong> Auto-triggers the 2-minute post-run heart rate recovery capture.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- DETAILED CARDIAC RECOVERY MOCKUP PREVIEW -->
+<div class="mockup">
+  <div class="mockup-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <span>PREVIEW: POST-WORKOUT CARDIAC RECOVERY SCORE CARD</span>
+    <span style="color: #00E676; font-weight: bold;">STAND-STILL RECOVERY</span>
+  </div>
+  <div class="mockup-body" style="background: #080808; color: #fff;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+      
+      <div style="background: #121212; border: 1px solid #222; border-radius: 8px; padding: 1rem; text-align: center;">
+        <div style="font-size: 0.75rem; color: #888; text-transform: uppercase;">Peak HR at Finish</div>
+        <div style="font-size: 2rem; font-weight: 800; color: #FF3B30; font-family: monospace;">145 <span style="font-size: 0.8rem; color: #888;">BPM</span></div>
+        <div style="font-size: 0.7rem; color: #666; margin-top: 4px;">T = 0s (Cooldown start)</div>
+      </div>
+
+      <div style="background: #121212; border: 1px solid #222; border-radius: 8px; padding: 1rem; text-align: center;">
+        <div style="font-size: 0.75rem; color: #888; text-transform: uppercase;">1-Minute Drop (&Delta;HR<sub>60</sub>)</div>
+        <div style="font-size: 2rem; font-weight: 800; color: #00E676; font-family: monospace;">-28 <span style="font-size: 0.8rem; color: #888;">BPM</span></div>
+        <div style="font-size: 0.7rem; color: #00E676; margin-top: 4px;">HR 117 (Excellent Vagal Tone)</div>
+      </div>
+
+      <div style="background: #121212; border: 1px solid #222; border-radius: 8px; padding: 1rem; text-align: center;">
+        <div style="font-size: 0.75rem; color: #888; text-transform: uppercase;">2-Minute Drop (&Delta;HR<sub>120</sub>)</div>
+        <div style="font-size: 2rem; font-weight: 800; color: #00D2FF; font-family: monospace;">-46 <span style="font-size: 0.8rem; color: #888;">BPM</span></div>
+        <div style="font-size: 0.7rem; color: #00D2FF; margin-top: 4px;">HR 99 (Full Aerobic Return)</div>
+      </div>
+
+    </div>
+
+    <div style="background: #141414; border-left: 4px solid #00E676; padding: 0.85rem 1rem; border-radius: 0 8px 8px 0; font-size: 0.85rem; color: #ccc;">
+      <strong style="color: #fff;">Coach Assessment:</strong> "Strong vagal reactivation. A 1-minute drop of 28 bpm indicates superior cardiovascular adaptation and low autonomic fatigue."
+    </div>
+  </div>
+</div>
