@@ -40,14 +40,24 @@ class AcousticCadenceDetector {
 
         try {
             audioRecord = AudioRecord(
-                MediaRecorder.AudioSource.MIC,
+                MediaRecorder.AudioSource.VOICE_RECOGNITION,
                 SAMPLE_RATE,
                 CHANNEL_CONFIG,
                 AUDIO_FORMAT,
                 bufferSize
             )
-        } catch (e: Exception) {
-            return
+        } catch (_: Exception) {
+            try {
+                audioRecord = AudioRecord(
+                    MediaRecorder.AudioSource.MIC,
+                    SAMPLE_RATE,
+                    CHANNEL_CONFIG,
+                    AUDIO_FORMAT,
+                    bufferSize
+                )
+            } catch (_: Exception) {
+                return
+            }
         }
 
         if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
@@ -70,11 +80,12 @@ class AcousticCadenceDetector {
                 if (readShorts > 0) {
                     var sumSquares = 0.0
                     for (i in 0 until readShorts) {
-                        val rawSample = audioBuffer[i] / 32768.0f
+                        // 12.0x digital pre-gain for deck footstrike detection
+                        val rawSample = (audioBuffer[i] / 32768.0f) * 12.0f
                         val filtered = filter.filter(rawSample)
                         sumSquares += filtered * filtered
                     }
-                    val rmsEnergy = sqrt(sumSquares / readShorts).toFloat()
+                    val rmsEnergy = (sqrt(sumSquares / readShorts).toFloat()).coerceIn(0f, 1f)
                     val nowMs = System.currentTimeMillis()
                     peakDetector.processSample(rmsEnergy, nowMs)
                 }

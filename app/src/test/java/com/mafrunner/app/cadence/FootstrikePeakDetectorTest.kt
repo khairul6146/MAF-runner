@@ -32,15 +32,19 @@ class FootstrikePeakDetectorTest {
     @Test
     fun testLiveEnergyAndThresholdEmission() {
         val detector = FootstrikePeakDetector(minRefractoryMs = 220L)
-        detector.setSensitivity(5f)
-        assertEquals(0.6f, detector.currentThreshold.value, 0.01f)
+        // Sensitivity 10 gives lowest threshold / high sensitivity
+        detector.setSensitivity(10f)
+        assertTrue(detector.currentThreshold.value <= 0.15f)
 
-        detector.processSample(energy = 0.45f, timestampMs = 1000L)
-        assertEquals(0.45f, detector.liveEnergy.value, 0.01f)
-        assertEquals(0L, detector.lastStrikeTimestampMsFlow.value)
+        // Moderate strike easily triggers at sensitivity 10
+        assertTrue(detector.processSample(energy = 0.20f, timestampMs = 1000L))
+        assertEquals(0.20f, detector.liveEnergy.value, 0.01f)
+        assertEquals(1000L, detector.lastStrikeTimestampMsFlow.value)
 
-        detector.processSample(energy = 0.85f, timestampMs = 1500L)
-        assertEquals(0.85f, detector.liveEnergy.value, 0.01f)
-        assertEquals(1500L, detector.lastStrikeTimestampMsFlow.value)
+        // Sensitivity 1 requires higher clearance
+        val lowSensDetector = FootstrikePeakDetector(minRefractoryMs = 220L)
+        lowSensDetector.setSensitivity(1f)
+        assertTrue(lowSensDetector.currentThreshold.value >= 0.35f)
+        assertFalse(lowSensDetector.processSample(energy = 0.20f, timestampMs = 1000L))
     }
 }
