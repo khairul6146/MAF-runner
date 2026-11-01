@@ -123,6 +123,32 @@ class WorkoutRepository(context: Context) {
         refreshWorkouts()
     }
 
+    suspend fun deleteWorkout(workoutId: Long): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        db.beginTransaction()
+        try {
+            db.delete(
+                WorkoutDatabaseHelper.TABLE_SAMPLES,
+                "${WorkoutDatabaseHelper.COL_WORKOUT_ID} = ?",
+                arrayOf(workoutId.toString())
+            )
+            val rows = db.delete(
+                WorkoutDatabaseHelper.TABLE_WORKOUTS,
+                "${WorkoutDatabaseHelper.COL_ID} = ?",
+                arrayOf(workoutId.toString())
+            )
+            db.setTransactionSuccessful()
+            refreshWorkouts()
+            rows > 0
+        } finally {
+            db.endTransaction()
+        }
+    }
+
+    suspend fun getWorkoutById(workoutId: Long): WorkoutEntity? = withContext(Dispatchers.IO) {
+        _workoutsFlow.value.find { it.id == workoutId }
+    }
+
     suspend fun getSamplesForWorkout(workoutId: Long): List<HeartRateSampleEntity> = withContext(Dispatchers.IO) {
         val list = mutableListOf<HeartRateSampleEntity>()
         val db = dbHelper.readableDatabase

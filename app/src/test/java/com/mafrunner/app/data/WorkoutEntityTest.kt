@@ -24,4 +24,31 @@ class WorkoutEntityTest {
         )
         assertEquals(85, workout.inZonePercentage)
     }
+
+    @Test
+    fun testEntityCopyAndUpdating() {
+        val original = WorkoutEntity(
+            id = 10L,
+            startTime = 5000L,
+            endTime = 7000L,
+            durationSec = 2000,
+            underSec = 200,
+            inZoneSec = 1600,
+            overSec = 200,
+            avgHr = 140,
+            maxHr = 145,
+            avgCadence = 175,
+            treadmillSpeed = null,
+            treadmillDistance = null,
+            isBenchmark = false
+        )
+        val updated = original.copy(
+            treadmillSpeed = 9.2f,
+            treadmillDistance = 5.1f,
+            isBenchmark = true
+        )
+        assertEquals(9.2f, updated.treadmillSpeed ?: 0f, 0.01f)
+        assertEquals(5.1f, updated.treadmillDistance ?: 0f, 0.01f)
+        assertEquals(true, updated.isBenchmark)
+    }
 }
