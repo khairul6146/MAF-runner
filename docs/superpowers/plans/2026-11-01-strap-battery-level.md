@@ -38,7 +38,7 @@
 - Consumes: Raw GATT characteristic byte array (`ByteArray?`).
 - Produces: `BleBatteryParser.parse(bytes: ByteArray?): Int?` returning integer in range $0..100$ or `null`.
 
-- [ ] **Step 1: Write failing unit tests in `BleBatteryParserTest.kt`**
+- [x] **Step 1: Write failing unit tests in `BleBatteryParserTest.kt`**
   Assert:
   - Standard percentage (e.g. `0x55` -> 85).
   - Minimum percentage (`0x00` -> 0).
@@ -46,11 +46,11 @@
   - Clamping of out-of-range values (`0xFF` -> 100).
   - Null or empty input returns `null`.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
   Run: `.\gradlew.bat testDebugUnitTest --tests com.mafrunner.app.ble.BleBatteryParserTest --console=plain`
   Expected: FAIL (class `BleBatteryParser` not found).
 
-- [ ] **Step 3: Implement `BleBatteryParser.kt`**
+- [x] **Step 3: Implement `BleBatteryParser.kt`**
   ```kotlin
   package com.mafrunner.app.ble
 
@@ -63,11 +63,11 @@
   }
   ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
   Run: `.\gradlew.bat testDebugUnitTest --tests com.mafrunner.app.ble.BleBatteryParserTest --console=plain`
   Expected: PASS.
 
-- [ ] **Step 5: Commit changes**
+- [x] **Step 5: Commit changes**
   ```bash
   git add app/src/main/kotlin/com/mafrunner/app/ble/BleBatteryParser.kt app/src/test/java/com/mafrunner/app/ble/BleBatteryParserTest.kt
   git commit -m "feat(ble): add BleBatteryParser with 0-100% clamping and unit tests"
@@ -84,7 +84,7 @@
 - Consumes: `BleBatteryParser`, Android `BluetoothGatt`.
 - Produces: `val batteryLevelFlow: StateFlow<Int?>` exposed on `BleHeartRateManager`.
 
-- [ ] **Step 1: Add UUID constants and `batteryLevelFlow` in `BleHeartRateManager.kt`**
+- [x] **Step 1: Add UUID constants and `batteryLevelFlow` in `BleHeartRateManager.kt`**
   Add:
   - `BATTERY_SERVICE_UUID: UUID = UUID.fromString("0000180F-0000-1000-8000-00805F9B34FB")`
   - `BATTERY_LEVEL_UUID: UUID = UUID.fromString("00002A19-0000-1000-8000-00805F9B34FB")`
@@ -92,7 +92,7 @@
   - `private val _batteryLevelFlow = MutableStateFlow<Int?>(null)`
   - `val batteryLevelFlow: StateFlow<Int?> = _batteryLevelFlow.asStateFlow()`
 
-- [ ] **Step 2: Query Battery Service in `onServicesDiscovered`**
+- [x] **Step 2: Query Battery Service in `onServicesDiscovered`**
   In `onServicesDiscovered(gatt, status)`:
   - If status is `GATT_SUCCESS`:
     - After setting up HR notifications, check `val batteryService = gatt.getService(BATTERY_SERVICE_UUID)`.
@@ -101,7 +101,7 @@
       - Call `gatt.readCharacteristic(batteryChar)`.
       - Enable notifications if supported: `gatt.setCharacteristicNotification(batteryChar, true)`.
 
-- [ ] **Step 3: Handle `onCharacteristicRead` and `onCharacteristicChanged`**
+- [x] **Step 3: Handle `onCharacteristicRead` and `onCharacteristicChanged`**
   - Implement/update `onCharacteristicRead`:
     - Check if `characteristic.uuid == BATTERY_LEVEL_UUID`.
     - Parse using `batteryParser.parse(value)` and assign to `_batteryLevelFlow.value`.
@@ -110,11 +110,11 @@
   - In `disconnect()` and `onConnectionStateChange` (`DISCONNECTED`):
     - Reset `_batteryLevelFlow.value = null`.
 
-- [ ] **Step 4: Verify Compilation & Existing Tests**
+- [x] **Step 4: Verify Compilation & Existing Tests**
   Run: `.\gradlew.bat testDebugUnitTest --console=plain`
   Expected: BUILD SUCCESSFUL (all tests pass).
 
-- [ ] **Step 5: Commit changes**
+- [x] **Step 5: Commit changes**
   ```bash
   git add app/src/main/kotlin/com/mafrunner/app/ble/BleHeartRateManager.kt
   git commit -m "feat(ble): add battery service discovery and live batteryLevelFlow"
@@ -133,17 +133,17 @@
 - Consumes: `BleHeartRateManager.batteryLevelFlow`.
 - Produces: `WorkoutSessionState.strapBatteryLevel: Int?`.
 
-- [ ] **Step 1: Write failing unit test in `WorkoutSessionStateTest.kt`**
+- [x] **Step 1: Write failing unit test in `WorkoutSessionStateTest.kt`**
   In `WorkoutSessionStateTest.kt`, add `testStrapBatteryLevelField()`:
   - Initialize `WorkoutSessionState(strapBatteryLevel = 85)`.
   - Assert `assertEquals(85, state.strapBatteryLevel)`.
   - Assert default value is `null`.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
   Run: `.\gradlew.bat testDebugUnitTest --tests com.mafrunner.app.service.WorkoutSessionStateTest --console=plain`
   Expected: FAIL (`strapBatteryLevel` unresolved).
 
-- [ ] **Step 3: Update `WorkoutSessionState.kt` and `WorkoutTrackingService.kt`**
+- [x] **Step 3: Update `WorkoutSessionState.kt` and `WorkoutTrackingService.kt`**
   - In `WorkoutSessionState.kt`, add parameter:
     `val strapBatteryLevel: Int? = null`
   - In `WorkoutTrackingService.kt`, in `onCreate()` or coroutine launch:
@@ -156,11 +156,11 @@
       }
       ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
   Run: `.\gradlew.bat testDebugUnitTest --tests com.mafrunner.app.service.WorkoutSessionStateTest --console=plain`
   Expected: PASS.
 
-- [ ] **Step 5: Commit changes**
+- [x] **Step 5: Commit changes**
   ```bash
   git add app/src/main/kotlin/com/mafrunner/app/service/
   git commit -m "feat(service): wire strap battery level to WorkoutSessionState"
@@ -178,11 +178,11 @@
 - Consumes: `strapBatteryLevel: Int?` passed from `MainActivity`.
 - Produces: Setup screen Bluetooth Strap Card with battery percentage badge and pre-run low-battery warning.
 
-- [ ] **Step 1: Update `SetupScreen.kt` parameters**
+- [x] **Step 1: Update `SetupScreen.kt` parameters**
   Add parameter:
   `strapBatteryLevel: Int? = null`
 
-- [ ] **Step 2: Update Bluetooth Strap Card in `SetupScreen.kt`**
+- [x] **Step 2: Update Bluetooth Strap Card in `SetupScreen.kt`**
   - Next to MAC address or in top-right of card, if `bleState == BleConnectionState.CONNECTED && strapBatteryLevel != null`:
     - Display battery pill: e.g. `85%` with colored battery icon:
       - Neon Green (`#00E676`) when $\ge 50\%$.
@@ -192,15 +192,15 @@
     - Render a compact warning chip inside the card:
       `⚠️ Strap battery low (XX%)` with amber text and subtle `#2A1E00` background.
 
-- [ ] **Step 3: Wire in `MainActivity.kt`**
+- [x] **Step 3: Wire in `MainActivity.kt`**
   - Collect `bleBattery by workoutService?.bleManager?.batteryLevelFlow?.collectAsState() ?: remember { mutableStateOf(null) }`.
   - Pass `strapBatteryLevel = bleBattery` into `SetupScreen(...)`.
 
-- [ ] **Step 4: Verify Compilation**
+- [x] **Step 4: Verify Compilation**
   Run: `.\gradlew.bat compileDebugKotlin --console=plain`
   Expected: BUILD SUCCESSFUL.
 
-- [ ] **Step 5: Commit changes**
+- [x] **Step 5: Commit changes**
   ```bash
   git add app/src/main/kotlin/com/mafrunner/app/ui/screens/SetupScreen.kt app/src/main/kotlin/com/mafrunner/app/MainActivity.kt
   git commit -m "feat(ui): add battery pill and pre-run low battery warning to SetupScreen"
@@ -217,7 +217,7 @@
 - Consumes: `state.strapBatteryLevel` from `WorkoutSessionState`.
 - Produces: Live status bar chip displaying device name and strap battery percentage.
 
-- [ ] **Step 1: Update Status Top Bar in `ConsoleScreen.kt`**
+- [x] **Step 1: Update Status Top Bar in `ConsoleScreen.kt`**
   In the top status bar:
   - If `state.strapBatteryLevel != null`:
     - Render integrated pill:
@@ -232,11 +232,11 @@
   - If `state.strapBatteryLevel == null`:
     - Retain existing clean `"COOSPO H9Z"` without broken dividers.
 
-- [ ] **Step 2: Verify Compilation & Run Tests**
+- [x] **Step 2: Verify Compilation & Run Tests**
   Run: `.\gradlew.bat compileDebugKotlin --console=plain`
   Expected: BUILD SUCCESSFUL.
 
-- [ ] **Step 3: Commit changes**
+- [x] **Step 3: Commit changes**
   ```bash
   git add app/src/main/kotlin/com/mafrunner/app/ui/screens/ConsoleScreen.kt
   git commit -m "feat(ui): display live strap battery percentage in ConsoleScreen status pill"
@@ -249,22 +249,22 @@
 **Files:**
 - Output: `MAFRunner.apk` (project root)
 
-- [ ] **Step 1: Run full unit test suite**
+- [x] **Step 1: Run full unit test suite**
   Run: `.\gradlew.bat test --console=plain`
   Expected: BUILD SUCCESSFUL (all unit test classes pass).
 
-- [ ] **Step 2: Assemble Debug APK**
+- [x] **Step 2: Assemble Debug APK**
   Run: `.\gradlew.bat assembleDebug --console=plain`
   Expected: BUILD SUCCESSFUL.
 
-- [ ] **Step 3: Copy fresh binary to root `MAFRunner.apk`**
+- [x] **Step 3: Copy fresh binary to root `MAFRunner.apk`**
   Run: `Copy-Item "app/build/outputs/apk/debug/app-debug.apk" -Destination "MAFRunner.apk" -Force`
 
-- [ ] **Step 4: Verify APK timestamp and size**
+- [x] **Step 4: Verify APK timestamp and size**
   Run: `Get-Item MAFRunner.apk | Select-Object Name, Length, LastWriteTime`
   Expected: Size ~31MB, current timestamp.
 
-- [ ] **Step 5: Commit plan progress and updates**
+- [x] **Step 5: Commit plan progress and updates**
   ```bash
   git add docs/superpowers/plans/2026-11-01-strap-battery-level.md
   git commit -m "chore: complete strap battery level and pre-run warning implementation plan"
