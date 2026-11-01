@@ -33,4 +33,26 @@ class WorkoutSessionStateTest {
         val state = WorkoutSessionState(lastStrikeTimestampMs = 15000L)
         assertEquals(15000L, state.lastStrikeTimestampMs)
     }
+
+    @Test
+    fun testGuidedTestStateFields() {
+        val state = WorkoutSessionState(
+            isActive = true,
+            isGuidedTest = true,
+            testPhase = com.mafrunner.app.domain.TestPhase.TEST_STEADY,
+            phaseRemainingSeconds = 1122L,
+            targetTestDurationSeconds = 1800L,
+            recoveryPeakHr = 145,
+            recoveryHr60 = 118,
+            recoveryHr120 = 99,
+            recoveryDrop60 = 27,
+            recoveryDrop120 = 46
+        )
+        assertEquals(true, state.isGuidedTest)
+        assertEquals(com.mafrunner.app.domain.TestPhase.TEST_STEADY, state.testPhase)
+        assertEquals("18:42", state.formattedPhaseCountdown)
+        assertEquals(145, state.recoveryPeakHr)
+        assertEquals(27, state.recoveryDrop60)
+        assertEquals(46, state.recoveryDrop120)
+    }
 }

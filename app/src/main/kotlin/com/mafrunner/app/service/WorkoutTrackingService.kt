@@ -23,6 +23,8 @@ import com.mafrunner.app.domain.MafCalculator
 import com.mafrunner.app.domain.MafCategory
 import com.mafrunner.app.domain.MafZone
 import com.mafrunner.app.domain.MafZones
+import com.mafrunner.app.domain.TestPhase
+import com.mafrunner.app.domain.TestProtocolEngine
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -58,6 +60,9 @@ class WorkoutTrackingService : Service() {
     private var lastFloorAlertMs = 0L
     private var cadenceRecordingEnabled = true
     private var timerJob: Job? = null
+
+    private var testProtocolEngine: TestProtocolEngine? = null
+    private var previousTestPhase: TestPhase = TestPhase.FREE_RUN
 
     companion object {
         const val CHANNEL_ID = "maf_workout_channel"
@@ -119,18 +124,49 @@ class WorkoutTrackingService : Service() {
         activeZones = mafCalculator.calculate(age, category, manualCeiling)
     }
 
-    fun startWorkout(enableCadence: Boolean = true) {
+    fun startWorkout(
+        enableCadence: Boolean = true,
+        isGuidedTest: Boolean = false,
+        warmupDurationSec: Long = 0L,
+        targetTestDurationSec: Long = 1800L
+    ) {
         samples.clear()
         workoutStartTime = System.currentTimeMillis()
         wakeLock?.acquire(3 * 60 * 60 * 1000L) // 3 hours max
 
-        _sessionState.value = WorkoutSessionState(isActive = true, isPaused = false)
+        testProtocolEngine = if (isGuidedTest) {
+            TestProtocolEngine(
+                warmupDurationSec = warmupDurationSec,
+                targetTestDurationSec = targetTestDurationSec
+            )
+        } else {
+            null
+        }
+        previousTestPhase = testProtocolEngine?.currentPhase ?: TestPhase.FREE_RUN
+
+        _sessionState.value = WorkoutSessionState(
+            isActive = true,
+            isPaused = false,
+            isGuidedTest = isGuidedTest,
+            testPhase = testProtocolEngine?.currentPhase ?: TestPhase.FREE_RUN,
+            phaseRemainingSeconds = testProtocolEngine?.phaseRemainingSeconds ?: 0L,
+            targetTestDurationSeconds = targetTestDurationSec
+        )
         cadenceRecordingEnabled = enableCadence
         if (enableCadence) {
             cadenceDetector.start()
         }
 
         startForegroundService()
+
+        if (isGuidedTest) {
+            if (warmupDurationSec > 0L) {
+                alertEngine.speechCoach.speakWarmupStart()
+            } else {
+                val targetMid = activeZones.targetMin + (activeZones.ceiling - activeZones.targetMin) / 2
+                alertEngine.speechCoach.speakTestStart((targetTestDurationSec / 60).toInt(), targetMid)
+            }
+        }
 
         timerJob = scope.launch {
             while (isActive) {
@@ -144,8 +180,10 @@ class WorkoutTrackingService : Service() {
                     var inZone = current.inZoneSeconds
                     var over = current.overSeconds
 
+                    var currentZone: MafZone? = null
                     if (currentHr > 0) {
-                        when (mafCalculator.evaluateZone(currentHr, activeZones)) {
+                        currentZone = mafCalculator.evaluateZone(currentHr, activeZones)
+                        when (currentZone) {
                             MafZone.BELOW_FLOOR -> under++
                             MafZone.MAF_TARGET -> inZone++
                             MafZone.OVER_CEILING -> over++
@@ -160,15 +198,111 @@ class WorkoutTrackingService : Service() {
                         )
                     }
 
-                    _sessionState.value = current.copy(
-                        elapsedSeconds = current.elapsedSeconds + 1,
-                        underSeconds = under,
-                        inZoneSeconds = inZone,
-                        overSeconds = over
-                    )
+                    val engine = testProtocolEngine
+                    if (engine != null) {
+                        val newPhase = engine.tick(currentHr, currentCadence, currentZone)
+
+                        if (newPhase != previousTestPhase) {
+                            when (newPhase) {
+                                TestPhase.TEST_STEADY -> {
+                                    val targetMid = activeZones.targetMin + (activeZones.ceiling - activeZones.targetMin) / 2
+                                    alertEngine.speechCoach.speakTestStart((engine.targetTestDurationSec / 60).toInt(), targetMid)
+                                }
+                                TestPhase.RECOVERY -> {
+                                    cadenceDetector.stop()
+                                    alertEngine.speechCoach.speakRecoveryStart()
+                                }
+                                TestPhase.COMPLETE -> {
+                                    val drop60 = engine.recoveryDrop60 ?: 0
+                                    val drop120 = engine.recoveryDrop120 ?: 0
+                                    alertEngine.speechCoach.speakRecoveryComplete(drop60, drop120)
+                                    showTestCompleteNotification(drop60, drop120)
+                                }
+                                else -> {}
+                            }
+                            previousTestPhase = newPhase
+                        }
+
+                        // Voice coach triggers when out of zone during steady test
+                        if (newPhase == TestPhase.TEST_STEADY && currentHr > 0) {
+                            val now = System.currentTimeMillis()
+                            if (currentZone == MafZone.OVER_CEILING) {
+                                alertEngine.speechCoach.speakCeilingWarning(currentHr, now)
+                            } else if (current.elapsedSeconds >= 30 && currentZone == MafZone.BELOW_FLOOR) {
+                                alertEngine.speechCoach.speakFloorWarning(currentHr, now)
+                            }
+                        }
+
+                        _sessionState.value = current.copy(
+                            elapsedSeconds = current.elapsedSeconds + 1,
+                            underSeconds = under,
+                            inZoneSeconds = inZone,
+                            overSeconds = over,
+                            testPhase = engine.currentPhase,
+                            phaseRemainingSeconds = engine.phaseRemainingSeconds,
+                            recoveryPeakHr = engine.recoveryPeakHr,
+                            recoveryHr60 = engine.recoveryHr60,
+                            recoveryHr120 = engine.recoveryHr120,
+                            recoveryDrop60 = engine.recoveryDrop60,
+                            recoveryDrop120 = engine.recoveryDrop120,
+                            testUnderSeconds = engine.testUnderSeconds,
+                            testInZoneSeconds = engine.testInZoneSeconds,
+                            testOverSeconds = engine.testOverSeconds,
+                            testAvgHr = engine.testAvgHr,
+                            testAvgCadence = engine.testAvgCadence
+                        )
+                    } else {
+                        _sessionState.value = current.copy(
+                            elapsedSeconds = current.elapsedSeconds + 1,
+                            underSeconds = under,
+                            inZoneSeconds = inZone,
+                            overSeconds = over
+                        )
+                    }
                     updateNotification()
                 }
             }
+        }
+    }
+
+    fun skipWarmup() {
+        testProtocolEngine?.let { engine ->
+            engine.skipWarmup()
+            previousTestPhase = engine.currentPhase
+            val targetMid = activeZones.targetMin + (activeZones.ceiling - activeZones.targetMin) / 2
+            alertEngine.speechCoach.speakTestStart((engine.targetTestDurationSec / 60).toInt(), targetMid)
+            _sessionState.value = _sessionState.value.copy(
+                testPhase = engine.currentPhase,
+                phaseRemainingSeconds = engine.phaseRemainingSeconds
+            )
+            updateNotification()
+        }
+    }
+
+    fun adjustTestDuration(deltaSeconds: Long) {
+        testProtocolEngine?.let { engine ->
+            engine.addTimeSeconds(deltaSeconds)
+            _sessionState.value = _sessionState.value.copy(
+                phaseRemainingSeconds = engine.phaseRemainingSeconds,
+                targetTestDurationSeconds = engine.targetTestDurationSec
+            )
+            updateNotification()
+        }
+    }
+
+    fun startRecoveryEarly() {
+        val currentHr = _sessionState.value.currentHr
+        testProtocolEngine?.let { engine ->
+            engine.startRecoveryEarly(currentHr)
+            previousTestPhase = engine.currentPhase
+            cadenceDetector.stop()
+            alertEngine.speechCoach.speakRecoveryStart()
+            _sessionState.value = _sessionState.value.copy(
+                testPhase = engine.currentPhase,
+                phaseRemainingSeconds = engine.phaseRemainingSeconds,
+                recoveryPeakHr = engine.recoveryPeakHr
+            )
+            updateNotification()
         }
     }
 
@@ -180,7 +314,7 @@ class WorkoutTrackingService : Service() {
 
     fun resumeWorkout() {
         _sessionState.value = _sessionState.value.copy(isPaused = false)
-        if (cadenceRecordingEnabled) {
+        if (cadenceRecordingEnabled && _sessionState.value.testPhase != TestPhase.RECOVERY) {
             cadenceDetector.start()
         }
         updateNotification()
@@ -192,6 +326,7 @@ class WorkoutTrackingService : Service() {
         isBenchmark: Boolean = false
     ): WorkoutEntity? {
         val current = _sessionState.value
+        val engine = testProtocolEngine
         timerJob?.cancel()
         timerJob = null
 
@@ -205,27 +340,74 @@ class WorkoutTrackingService : Service() {
 
         if (current.elapsedSeconds < 5) return null // Too short to record
 
-        val avgHr = if (samples.isNotEmpty()) samples.map { it.hr }.average().toInt() else 0
+        val isGuided = engine != null
+        val isBench = if (isGuided) true else isBenchmark
+
+        val avgHr = if (isGuided && engine.testAvgHr > 0) {
+            engine.testAvgHr
+        } else if (samples.isNotEmpty()) {
+            samples.map { it.hr }.average().toInt()
+        } else 0
+
         val maxHr = if (samples.isNotEmpty()) samples.maxOf { it.hr } else 0
-        val avgCadence = if (samples.isNotEmpty()) samples.map { it.cadence }.filter { it > 0 }.let { if (it.isNotEmpty()) it.average().toInt() else 0 } else 0
+
+        val avgCadence = if (isGuided && engine.testAvgCadence > 0) {
+            engine.testAvgCadence
+        } else if (samples.isNotEmpty()) {
+            samples.map { it.cadence }.filter { it > 0 }.let { if (it.isNotEmpty()) it.average().toInt() else 0 }
+        } else 0
+
+        val underSec = if (isGuided) engine.testUnderSeconds else current.underSeconds
+        val inZoneSec = if (isGuided) engine.testInZoneSeconds else current.inZoneSeconds
+        val overSec = if (isGuided) engine.testOverSeconds else current.overSeconds
 
         val workout = WorkoutEntity(
             startTime = workoutStartTime,
             endTime = System.currentTimeMillis(),
             durationSec = current.elapsedSeconds,
-            underSec = current.underSeconds,
-            inZoneSec = current.inZoneSeconds,
-            overSec = current.overSeconds,
+            underSec = underSec,
+            inZoneSec = inZoneSec,
+            overSec = overSec,
             avgHr = avgHr,
             maxHr = maxHr,
             avgCadence = avgCadence,
             treadmillSpeed = treadmillSpeed,
             treadmillDistance = treadmillDistance,
-            isBenchmark = isBenchmark
+            isBenchmark = isBench,
+            isGuidedTest = isGuided,
+            targetDurationSec = engine?.targetTestDurationSec ?: 0L,
+            recoveryPeakHr = engine?.recoveryPeakHr,
+            recoveryHr60 = engine?.recoveryHr60,
+            recoveryHr120 = engine?.recoveryHr120,
+            recoveryDrop60 = engine?.recoveryDrop60,
+            recoveryDrop120 = engine?.recoveryDrop120
         )
 
         val id = repository.saveWorkout(workout, samples)
+        testProtocolEngine = null
         return workout.copy(id = id)
+    }
+
+    private fun showTestCompleteNotification(drop60: Int, drop120: Int) {
+        val notifyIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            notifyIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("MAF Test & Recovery Complete!")
+            .setContentText("HR Drop: -$drop60 bpm (1m), -$drop120 bpm (2m). Tap to log treadmill data.")
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .build()
+        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        manager.notify(NOTIFICATION_ID + 1, notification)
     }
 
     private fun startForegroundService() {
