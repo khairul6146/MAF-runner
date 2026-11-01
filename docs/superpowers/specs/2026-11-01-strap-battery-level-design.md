@@ -8,7 +8,7 @@ Exposing live battery percentage and providing proactive pre-run alerts protects
 
 ## Goals
 1. **Query Standard Bluetooth SIG Battery Service:** Support Bluetooth GATT standard Battery Service (`0x180F`) and Characteristic (`0x2A19`) across all compatible BLE heart rate straps.
-2. **Pre-Run Battery Visibility & Safeguard:** Display live strap battery percentage on the Setup screen's sensor card, with an inline amber warning banner when battery is $< 20\%$ to prompt battery replacement before starting.
+2. **Pre-Run Battery Visibility & Safeguard:** Display live strap battery percentage on the Setup screen's sensor card, with an inline amber warning banner when battery is $< 20\%$ to indicate strap battery low.
 3. **Live Workout Battery Telemetry:** Display battery percentage and a glanceable Nordic battery indicator directly in the live running console top bar alongside device status.
 4. **Resilient BLE Lifecycle Handling:** Gracefully handle straps that do not advertise the battery service (display `--` without crashing) and update the battery value whenever the strap sends notification updates.
 
@@ -32,7 +32,7 @@ Exposing live battery percentage and providing proactive pre-run alerts protects
 ## Approaches Considered
 
 ### Option A: Integrated Nordic Status Pill & Inline Pre-Run Warning (Selected)
-- **Concept:** Battery percentage and color-coded mini battery glyph are integrated directly into the existing sensor card on Setup and the status pill on the Console screen (`[ ● COOSPO H9Z | 85% 🔋 ]`). When battery is $< 20\%$, an inline warning banner appears on the Setup card recommending replacement.
+- **Concept:** Battery percentage and color-coded mini battery glyph are integrated directly into the existing sensor card on Setup and the status pill on the Console screen (`[ ● COOSPO H9Z | 85% 🔋 ]`). When battery is $< 20\%$, a clean warning indicator appears on the Setup card showing the battery is low.
 - **Tradeoffs:** High cohesion, zero UI clutter, fits seamlessly into Nordic minimalist aesthetic, informs without obstructing.
 - **Decision:** Selected by user.
 
@@ -79,8 +79,8 @@ Exposing live battery percentage and providing proactive pre-run alerts protects
   - When connected and `strapBatteryLevel != null`:
     - Display compact battery indicator: e.g. `85%` with color-coded mini battery icon.
   - When `strapBatteryLevel != null && strapBatteryLevel < 20`:
-    - Display inline warning card right above or inside the strap card:
-      `⚠️ PRE-RUN WARNING: LOW STRAP BATTERY (XX%). Consider replacing CR2032 to avoid mid-workout disconnect.`
+    - Display inline warning chip or line inside the strap card:
+      `⚠️ Strap battery low (XX%)`
 
 ### 4. Console Screen (`ConsoleScreen.kt`)
 - In `Status Top Bar`:
