@@ -32,17 +32,17 @@
 - Modify: `app/src/main/kotlin/com/mafrunner/app/cadence/FootstrikePeakDetector.kt`
 - Modify: `app/src/test/java/com/mafrunner/app/cadence/FootstrikePeakDetectorTest.kt`
 
-- [ ] **Step 1: Write unit tests for new sensitivity clearance math**
+- [x] **Step 1: Write unit tests for new sensitivity clearance math**
   In `FootstrikePeakDetectorTest.kt`, test that sensitivity 10 produces responsive low clearance (`~noiseFloor + 0.05f`) and sensitivity 1 produces higher clearance (`~noiseFloor + 0.41f`), allowing low-energy thuds (`0.10f`) to register at high sensitivity.
-- [ ] **Step 2: Run test to confirm failure**
+- [x] **Step 2: Run test to confirm failure**
   Run: `Set-Location "C:\Users\khair\MyProjects\maf-runner-android"; .\gradlew.bat testDebugUnitTest --tests "com.mafrunner.app.cadence.FootstrikePeakDetectorTest" --console=plain`
-- [ ] **Step 3: Update `FootstrikePeakDetector` threshold clearance logic**
+- [x] **Step 3: Update `FootstrikePeakDetector` threshold clearance logic**
   Implement dynamic baseline clearance formula based on slider sensitivity.
-- [ ] **Step 4: Update `AcousticCadenceDetector` with 12x gain and `VOICE_RECOGNITION`**
+- [x] **Step 4: Update `AcousticCadenceDetector` with 12x gain and `VOICE_RECOGNITION`**
   Set `AudioSource.VOICE_RECOGNITION` and apply 12.0x digital gain before RMS calculation.
-- [ ] **Step 5: Run tests to verify pass**
+- [x] **Step 5: Run tests to verify pass**
   Run: `Set-Location "C:\Users\khair\MyProjects\maf-runner-android"; .\gradlew.bat testDebugUnitTest --tests "com.mafrunner.app.cadence.FootstrikePeakDetectorTest" --console=plain`
-- [ ] **Step 6: Commit changes**
+- [x] **Step 6: Commit changes**
   Commit message: `feat: add 12x digital gain and auto-baseline clearance to cadence engine`
 
 ---
@@ -54,13 +54,13 @@
 - Modify: `app/src/main/kotlin/com/mafrunner/app/data/repository/WorkoutRepository.kt`
 - Modify: `app/src/test/java/com/mafrunner/app/data/WorkoutEntityTest.kt`
 
-- [ ] **Step 1: Write test for workout deletion and repository methods**
+- [x] **Step 1: Write test for workout deletion and repository methods**
   Add unit test for workout deletion and entity helpers.
-- [ ] **Step 2: Add `deleteWorkout` to `WorkoutRepository`**
+- [x] **Step 2: Add `deleteWorkout` to `WorkoutRepository`**
   Implement SQL deletion with cascade to samples table and flow refresh.
-- [ ] **Step 3: Run unit tests**
+- [x] **Step 3: Run unit tests**
   Run: `Set-Location "C:\Users\khair\MyProjects\maf-runner-android"; .\gradlew.bat testDebugUnitTest --tests "com.mafrunner.app.data.WorkoutEntityTest" --console=plain`
-- [ ] **Step 4: Commit changes**
+- [x] **Step 4: Commit changes**
   Commit message: `feat: implement workout deletion and update methods in repository`
 
 ---
@@ -72,7 +72,7 @@
 - Modify: `app/src/main/kotlin/com/mafrunner/app/ui/screens/HistoryScreen.kt`
 - Modify: `app/src/main/kotlin/com/mafrunner/app/MainActivity.kt`
 
-- [ ] **Step 1: Create `WorkoutDetailDialog.kt`**
+- [x] **Step 1: Create `WorkoutDetailDialog.kt`**
   Implement full-screen or large bottom sheet dialog displaying:
   - Date, time, formatted duration, average & max HR, cadence
   - Zone percentage & visual distribution bar
@@ -81,11 +81,11 @@
   - Save Changes button
   - Delete Workout button with confirmation prompt
   - Export Single Run button (CSV / TCX share)
-- [ ] **Step 2: Wire dialog to `HistoryScreen` click event**
+- [x] **Step 2: Wire dialog to `HistoryScreen` click event**
   Make history list items clickable to launch `WorkoutDetailDialog`.
-- [ ] **Step 3: Test compilation**
+- [x] **Step 3: Test compilation**
   Run: `Set-Location "C:\Users\khair\MyProjects\maf-runner-android"; .\gradlew.bat compileDebugKotlin --console=plain`
-- [ ] **Step 4: Commit changes**
+- [x] **Step 4: Commit changes**
   Commit message: `feat: create workout detail inspection, edit, and deletion dialog`
 
 ---
@@ -97,25 +97,25 @@
 - Create: `app/src/test/java/com/mafrunner/app/domain/WorkoutAnalyticsEngineTest.kt`
 - Modify: `app/src/main/kotlin/com/mafrunner/app/ui/screens/HistoryScreen.kt`
 
-- [ ] **Step 1: Write failing unit test for `WorkoutAnalyticsEngine`**
+- [x] **Step 1: Write failing unit test for `WorkoutAnalyticsEngine`**
   Test time-window bucketing (Week, Month, Quarter, All-Time), compliance percentage calculation, and aerobic speed progression deltas.
-- [ ] **Step 2: Run test to confirm failure**
+- [x] **Step 2: Run test to confirm failure**
   Run: `Set-Location "C:\Users\khair\MyProjects\maf-runner-android"; .\gradlew.bat testDebugUnitTest --tests "com.mafrunner.app.domain.WorkoutAnalyticsEngineTest" --console=plain`
-- [ ] **Step 3: Implement `WorkoutAnalyticsEngine`**
+- [x] **Step 3: Implement `WorkoutAnalyticsEngine`**
   Write pure domain class computing:
   - Total duration, total distance, session count
   - Aggregate MAF compliance rate
   - Aerobic pace progression on benchmark runs
   - Zone time aggregates
-- [ ] **Step 4: Run unit tests to confirm pass**
+- [x] **Step 4: Run unit tests to confirm pass**
   Run: `Set-Location "C:\Users\khair\MyProjects\maf-runner-android"; .\gradlew.bat testDebugUnitTest --tests "com.mafrunner.app.domain.WorkoutAnalyticsEngineTest" --console=plain`
-- [ ] **Step 5: Integrate Analytics UI into `HistoryScreen.kt`**
+- [x] **Step 5: Integrate Analytics UI into `HistoryScreen.kt`**
   Add period selection tabs `[Week] [Month] [Quarter] [All]` and rich stats cards:
   - Aerobic Base Compliance Bar
   - Total Training Volume & Distance
   - MAF Progression Trend Indicator
   - Tri-Zone Distribution Bar
-- [ ] **Step 6: Commit changes**
+- [x] **Step 6: Commit changes**
   Commit message: `feat: add multi-period aerobic analytics engine and UI to history screen`
 
 ---
@@ -126,10 +126,10 @@
 - Output: `MAFRunner.apk`
 - Output: `app/build/outputs/apk/debug/app-debug.apk`
 
-- [ ] **Step 1: Run full unit test suite**
+- [x] **Step 1: Run full unit test suite**
   Run: `Set-Location "C:\Users\khair\MyProjects\maf-runner-android"; .\gradlew.bat test --console=plain`
-- [ ] **Step 2: Assemble Debug APK**
+- [x] **Step 2: Assemble Debug APK**
   Run: `Set-Location "C:\Users\khair\MyProjects\maf-runner-android"; .\gradlew.bat assembleDebug --console=plain`
-- [ ] **Step 3: Copy and verify standalone `MAFRunner.apk`**
-- [ ] **Step 4: Final commit**
+- [x] **Step 3: Copy and verify standalone `MAFRunner.apk`**
+- [x] **Step 4: Final commit**
   Commit message: `chore: assemble updated MAFRunner APK with cadence gain and history analytics`
