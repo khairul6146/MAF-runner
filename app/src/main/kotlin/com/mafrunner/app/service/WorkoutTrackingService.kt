@@ -105,6 +105,13 @@ class WorkoutTrackingService : Service() {
             }
         }
 
+        // Observe BLE strap battery
+        scope.launch {
+            bleManager.batteryLevelFlow.collect { battery ->
+                _sessionState.value = _sessionState.value.copy(strapBatteryLevel = battery)
+            }
+        }
+
         // Observe Cadence
         scope.launch {
             cadenceDetector.cadenceSpm.collect { spm ->

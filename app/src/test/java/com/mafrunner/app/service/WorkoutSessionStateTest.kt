@@ -55,4 +55,12 @@ class WorkoutSessionStateTest {
         assertEquals(27, state.recoveryDrop60)
         assertEquals(46, state.recoveryDrop120)
     }
+
+    @Test
+    fun testStrapBatteryLevelField() {
+        val state = WorkoutSessionState(strapBatteryLevel = 85)
+        assertEquals(85, state.strapBatteryLevel)
+        val defaultState = WorkoutSessionState()
+        org.junit.Assert.assertNull(defaultState.strapBatteryLevel)
+    }
 }
