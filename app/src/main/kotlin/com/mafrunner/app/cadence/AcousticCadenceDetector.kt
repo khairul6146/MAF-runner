@@ -12,6 +12,9 @@ class AcousticCadenceDetector {
 
     private val peakDetector = FootstrikePeakDetector()
     val cadenceSpm: StateFlow<Int> = peakDetector.cadenceSpm
+    val liveEnergy: StateFlow<Float> = peakDetector.liveEnergy
+    val currentThreshold: StateFlow<Float> = peakDetector.currentThreshold
+    val lastStrikeTimestampMs: StateFlow<Long> = peakDetector.lastStrikeTimestampMsFlow
 
     private var audioRecord: AudioRecord? = null
     private var isRecording = false

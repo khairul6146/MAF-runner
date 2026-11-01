@@ -28,4 +28,19 @@ class FootstrikePeakDetectorTest {
         }
         assertEquals(180, detector.cadenceSpm.value)
     }
+
+    @Test
+    fun testLiveEnergyAndThresholdEmission() {
+        val detector = FootstrikePeakDetector(minRefractoryMs = 220L)
+        detector.setSensitivity(5f)
+        assertEquals(0.6f, detector.currentThreshold.value, 0.01f)
+
+        detector.processSample(energy = 0.45f, timestampMs = 1000L)
+        assertEquals(0.45f, detector.liveEnergy.value, 0.01f)
+        assertEquals(0L, detector.lastStrikeTimestampMsFlow.value)
+
+        detector.processSample(energy = 0.85f, timestampMs = 1500L)
+        assertEquals(0.85f, detector.liveEnergy.value, 0.01f)
+        assertEquals(1500L, detector.lastStrikeTimestampMsFlow.value)
+    }
 }

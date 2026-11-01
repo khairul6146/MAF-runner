@@ -12,6 +12,15 @@ class FootstrikePeakDetector(
     private val _cadenceSpm = MutableStateFlow(0)
     val cadenceSpm: StateFlow<Int> = _cadenceSpm.asStateFlow()
 
+    private val _liveEnergy = MutableStateFlow(0f)
+    val liveEnergy: StateFlow<Float> = _liveEnergy.asStateFlow()
+
+    private val _currentThreshold = MutableStateFlow(energyThreshold)
+    val currentThreshold: StateFlow<Float> = _currentThreshold.asStateFlow()
+
+    private val _lastStrikeTimestampMsFlow = MutableStateFlow(0L)
+    val lastStrikeTimestampMsFlow: StateFlow<Long> = _lastStrikeTimestampMsFlow.asStateFlow()
+
     private var lastStrikeTimestampMs = 0L
     private val strikeIntervals = ArrayDeque<Long>(8)
     private var noiseFloor: Float = 0.1f
@@ -20,11 +29,14 @@ class FootstrikePeakDetector(
         // Multiplier 1..10 maps to energy threshold 0.9..0.1
         val clamped = multiplier.coerceIn(1f, 10f)
         energyThreshold = 1.0f - (clamped * 0.08f)
+        _currentThreshold.value = energyThreshold
     }
 
     fun processSample(energy: Float, timestampMs: Long): Boolean {
+        _liveEnergy.value = energy
         // Adaptive noise floor tracking prevents steady treadmill motor hum from false triggering
         val dynamicThreshold = maxOf(energyThreshold, noiseFloor * 1.35f)
+        _currentThreshold.value = dynamicThreshold
         noiseFloor = (noiseFloor * 0.95f) + (energy * 0.05f)
 
         if (energy < dynamicThreshold) {
@@ -51,6 +63,7 @@ class FootstrikePeakDetector(
         }
 
         lastStrikeTimestampMs = timestampMs
+        _lastStrikeTimestampMsFlow.value = timestampMs
         return true
     }
 
@@ -58,6 +71,8 @@ class FootstrikePeakDetector(
         lastStrikeTimestampMs = 0L
         strikeIntervals.clear()
         _cadenceSpm.value = 0
+        _liveEnergy.value = 0f
+        _lastStrikeTimestampMsFlow.value = 0L
         noiseFloor = 0.1f
     }
 }
