@@ -51,4 +51,34 @@ class WorkoutEntityTest {
         assertEquals(5.1f, updated.treadmillDistance ?: 0f, 0.01f)
         assertEquals(true, updated.isBenchmark)
     }
+
+    @Test
+    fun testGuidedTestAndRecoveryFields() {
+        val testWorkout = WorkoutEntity(
+            id = 20L,
+            startTime = 10000L,
+            endTime = 12000L,
+            durationSec = 2100,
+            underSec = 50,
+            inZoneSec = 2000,
+            overSec = 50,
+            avgHr = 141,
+            maxHr = 145,
+            avgCadence = 178,
+            isGuidedTest = true,
+            targetDurationSec = 1800L,
+            recoveryPeakHr = 144,
+            recoveryHr60 = 118,
+            recoveryHr120 = 98,
+            recoveryDrop60 = 26,
+            recoveryDrop120 = 46
+        )
+        assertEquals(true, testWorkout.isGuidedTest)
+        assertEquals(1800L, testWorkout.targetDurationSec)
+        assertEquals(144, testWorkout.recoveryPeakHr)
+        assertEquals(118, testWorkout.recoveryHr60)
+        assertEquals(98, testWorkout.recoveryHr120)
+        assertEquals(26, testWorkout.recoveryDrop60)
+        assertEquals(46, testWorkout.recoveryDrop120)
+    }
 }

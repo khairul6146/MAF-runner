@@ -45,7 +45,14 @@ class WorkoutRepository(context: Context) {
                         avgCadence = it.getInt(it.getColumnIndexOrThrow(WorkoutDatabaseHelper.COL_AVG_CADENCE)),
                         treadmillSpeed = if (!it.isNull(it.getColumnIndexOrThrow(WorkoutDatabaseHelper.COL_TREADMILL_SPEED))) it.getFloat(it.getColumnIndexOrThrow(WorkoutDatabaseHelper.COL_TREADMILL_SPEED)) else null,
                         treadmillDistance = if (!it.isNull(it.getColumnIndexOrThrow(WorkoutDatabaseHelper.COL_TREADMILL_DISTANCE))) it.getFloat(it.getColumnIndexOrThrow(WorkoutDatabaseHelper.COL_TREADMILL_DISTANCE)) else null,
-                        isBenchmark = it.getInt(it.getColumnIndexOrThrow(WorkoutDatabaseHelper.COL_IS_BENCHMARK)) == 1
+                        isBenchmark = it.getInt(it.getColumnIndexOrThrow(WorkoutDatabaseHelper.COL_IS_BENCHMARK)) == 1,
+                        isGuidedTest = it.getInt(it.getColumnIndexOrThrow(WorkoutDatabaseHelper.COL_IS_GUIDED_TEST)) == 1,
+                        targetDurationSec = it.getLong(it.getColumnIndexOrThrow(WorkoutDatabaseHelper.COL_TARGET_DURATION_SEC)),
+                        recoveryPeakHr = if (!it.isNull(it.getColumnIndexOrThrow(WorkoutDatabaseHelper.COL_RECOVERY_HR_PEAK))) it.getInt(it.getColumnIndexOrThrow(WorkoutDatabaseHelper.COL_RECOVERY_HR_PEAK)) else null,
+                        recoveryHr60 = if (!it.isNull(it.getColumnIndexOrThrow(WorkoutDatabaseHelper.COL_RECOVERY_HR_60))) it.getInt(it.getColumnIndexOrThrow(WorkoutDatabaseHelper.COL_RECOVERY_HR_60)) else null,
+                        recoveryHr120 = if (!it.isNull(it.getColumnIndexOrThrow(WorkoutDatabaseHelper.COL_RECOVERY_HR_120))) it.getInt(it.getColumnIndexOrThrow(WorkoutDatabaseHelper.COL_RECOVERY_HR_120)) else null,
+                        recoveryDrop60 = if (!it.isNull(it.getColumnIndexOrThrow(WorkoutDatabaseHelper.COL_RECOVERY_DROP_60))) it.getInt(it.getColumnIndexOrThrow(WorkoutDatabaseHelper.COL_RECOVERY_DROP_60)) else null,
+                        recoveryDrop120 = if (!it.isNull(it.getColumnIndexOrThrow(WorkoutDatabaseHelper.COL_RECOVERY_DROP_120))) it.getInt(it.getColumnIndexOrThrow(WorkoutDatabaseHelper.COL_RECOVERY_DROP_120)) else null
                     )
                 )
             }
@@ -73,6 +80,13 @@ class WorkoutRepository(context: Context) {
                 workout.treadmillSpeed?.let { put(WorkoutDatabaseHelper.COL_TREADMILL_SPEED, it) }
                 workout.treadmillDistance?.let { put(WorkoutDatabaseHelper.COL_TREADMILL_DISTANCE, it) }
                 put(WorkoutDatabaseHelper.COL_IS_BENCHMARK, if (workout.isBenchmark) 1 else 0)
+                put(WorkoutDatabaseHelper.COL_IS_GUIDED_TEST, if (workout.isGuidedTest) 1 else 0)
+                put(WorkoutDatabaseHelper.COL_TARGET_DURATION_SEC, workout.targetDurationSec)
+                workout.recoveryPeakHr?.let { put(WorkoutDatabaseHelper.COL_RECOVERY_HR_PEAK, it) }
+                workout.recoveryHr60?.let { put(WorkoutDatabaseHelper.COL_RECOVERY_HR_60, it) }
+                workout.recoveryHr120?.let { put(WorkoutDatabaseHelper.COL_RECOVERY_HR_120, it) }
+                workout.recoveryDrop60?.let { put(WorkoutDatabaseHelper.COL_RECOVERY_DROP_60, it) }
+                workout.recoveryDrop120?.let { put(WorkoutDatabaseHelper.COL_RECOVERY_DROP_120, it) }
             }
             val workoutId = db.insert(WorkoutDatabaseHelper.TABLE_WORKOUTS, null, values)
 
@@ -98,10 +112,14 @@ class WorkoutRepository(context: Context) {
         workoutId: Long,
         speed: Float?,
         distance: Float?,
-        isBenchmark: Boolean
+        isBenchmark: Boolean,
+        durationSec: Long? = null
     ): Unit = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
         val values = ContentValues().apply {
+            if (durationSec != null) {
+                put(WorkoutDatabaseHelper.COL_DURATION_SEC, durationSec)
+            }
             if (speed != null) {
                 put(WorkoutDatabaseHelper.COL_TREADMILL_SPEED, speed)
             } else {

@@ -9,7 +9,7 @@ class WorkoutDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABA
 
     companion object {
         const val DATABASE_NAME = "maf_runner.db"
-        const val DATABASE_VERSION = 1
+        const val DATABASE_VERSION = 2
 
         const val TABLE_WORKOUTS = "workouts"
         const val TABLE_SAMPLES = "hr_samples"
@@ -28,6 +28,13 @@ class WorkoutDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABA
         const val COL_TREADMILL_SPEED = "treadmill_speed"
         const val COL_TREADMILL_DISTANCE = "treadmill_distance"
         const val COL_IS_BENCHMARK = "is_benchmark"
+        const val COL_IS_GUIDED_TEST = "is_guided_test"
+        const val COL_TARGET_DURATION_SEC = "target_duration_sec"
+        const val COL_RECOVERY_HR_PEAK = "recovery_hr_peak"
+        const val COL_RECOVERY_HR_60 = "recovery_hr_60"
+        const val COL_RECOVERY_HR_120 = "recovery_hr_120"
+        const val COL_RECOVERY_DROP_60 = "recovery_drop_60"
+        const val COL_RECOVERY_DROP_120 = "recovery_drop_120"
 
         // Samples Columns
         const val COL_WORKOUT_ID = "workout_id"
@@ -52,7 +59,14 @@ class WorkoutDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABA
                 $COL_AVG_CADENCE INTEGER NOT NULL,
                 $COL_TREADMILL_SPEED REAL,
                 $COL_TREADMILL_DISTANCE REAL,
-                $COL_IS_BENCHMARK INTEGER NOT NULL DEFAULT 0
+                $COL_IS_BENCHMARK INTEGER NOT NULL DEFAULT 0,
+                $COL_IS_GUIDED_TEST INTEGER NOT NULL DEFAULT 0,
+                $COL_TARGET_DURATION_SEC INTEGER NOT NULL DEFAULT 0,
+                $COL_RECOVERY_HR_PEAK INTEGER,
+                $COL_RECOVERY_HR_60 INTEGER,
+                $COL_RECOVERY_HR_120 INTEGER,
+                $COL_RECOVERY_DROP_60 INTEGER,
+                $COL_RECOVERY_DROP_120 INTEGER
             )
             """.trimIndent()
         )
@@ -72,8 +86,14 @@ class WorkoutDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABA
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_SAMPLES")
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_WORKOUTS")
-        onCreate(db)
+        if (oldVersion < 2) {
+            db.execSQL("ALTER TABLE $TABLE_WORKOUTS ADD COLUMN $COL_IS_GUIDED_TEST INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE $TABLE_WORKOUTS ADD COLUMN $COL_TARGET_DURATION_SEC INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE $TABLE_WORKOUTS ADD COLUMN $COL_RECOVERY_HR_PEAK INTEGER DEFAULT NULL")
+            db.execSQL("ALTER TABLE $TABLE_WORKOUTS ADD COLUMN $COL_RECOVERY_HR_60 INTEGER DEFAULT NULL")
+            db.execSQL("ALTER TABLE $TABLE_WORKOUTS ADD COLUMN $COL_RECOVERY_HR_120 INTEGER DEFAULT NULL")
+            db.execSQL("ALTER TABLE $TABLE_WORKOUTS ADD COLUMN $COL_RECOVERY_DROP_60 INTEGER DEFAULT NULL")
+            db.execSQL("ALTER TABLE $TABLE_WORKOUTS ADD COLUMN $COL_RECOVERY_DROP_120 INTEGER DEFAULT NULL")
+        }
     }
 }
