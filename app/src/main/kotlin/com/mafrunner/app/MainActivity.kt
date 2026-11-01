@@ -118,6 +118,7 @@ fun MainAppContainer(
 
     // Dialog States
     var showDevicePicker by remember { mutableStateOf(false) }
+    var showTestSetup by remember { mutableStateOf(false) }
     var summaryWorkout by remember { mutableStateOf<WorkoutEntity?>(null) }
 
     // Service States
@@ -233,9 +234,7 @@ fun MainAppContainer(
                     audioThreshold = audioThreshold,
                     lastStrikeTimeMs = lastStrikeTimeMs,
                     onStartWorkout = {
-                        workoutService?.configureZones(age, category)
-                        workoutService?.startWorkout(enableCadence = cadenceEnabled)
-                        currentTab = 1
+                        showTestSetup = true
                     }
                 )
                 1 -> ConsoleScreen(
@@ -252,7 +251,10 @@ fun MainAppContainer(
                                 currentTab = 0
                             }
                         }
-                    }
+                    },
+                    onSkipWarmup = { workoutService?.skipWarmup() },
+                    onAdjustDuration = { deltaSec -> workoutService?.adjustTestDuration(deltaSec) },
+                    onStartRecoveryEarly = { workoutService?.startRecoveryEarly() }
                 )
                 2 -> HistoryScreen(
                     workouts = workouts,
@@ -284,6 +286,23 @@ fun MainAppContainer(
             }
 
             // Dialogs
+            if (showTestSetup) {
+                TestSetupDialog(
+                    onDismiss = { showTestSetup = false },
+                    onStart = { isGuided, warmupSec, testSec ->
+                        showTestSetup = false
+                        workoutService?.configureZones(age, category)
+                        workoutService?.startWorkout(
+                            enableCadence = cadenceEnabled,
+                            isGuidedTest = isGuided,
+                            warmupDurationSec = warmupSec,
+                            targetTestDurationSec = testSec
+                        )
+                        currentTab = 1
+                    }
+                )
+            }
+
             if (showDevicePicker) {
                 DevicePickerDialog(
                     devices = discoveredDevices,

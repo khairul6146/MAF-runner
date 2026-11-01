@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mafrunner.app.domain.MafZone
 import com.mafrunner.app.domain.MafZones
+import com.mafrunner.app.domain.TestPhase
 import com.mafrunner.app.service.WorkoutSessionState
 import com.mafrunner.app.ui.theme.*
 
@@ -28,7 +30,10 @@ fun ConsoleScreen(
     zones: MafZones,
     onPause: () -> Unit,
     onResume: () -> Unit,
-    onFinish: () -> Unit
+    onFinish: () -> Unit,
+    onSkipWarmup: () -> Unit = {},
+    onAdjustDuration: (Long) -> Unit = {},
+    onStartRecoveryEarly: () -> Unit = {}
 ) {
     val currentHr = state.currentHr
     val isConnected = currentHr != null && currentHr > 0
@@ -73,6 +78,126 @@ fun ConsoleScreen(
             .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        if (state.isGuidedTest) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFF141518),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, NordicCardBorder, RoundedCornerShape(12.dp))
+                    .padding(10.dp)
+            ) {
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            val (phaseText, phaseColor) = when (state.testPhase) {
+                                TestPhase.WARMUP -> "WARMUP" to NordicCyan
+                                TestPhase.TEST_STEADY -> "MAF TEST" to NordicEmerald
+                                TestPhase.RECOVERY -> "RECOVERY" to NordicAmber
+                                else -> "TEST COMPLETE" to NordicEmerald
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(phaseColor)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = phaseText,
+                                color = phaseColor,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = 1.sp
+                            )
+                        }
+
+                        Text(
+                            text = state.formattedPhaseCountdown,
+                            color = NordicWhite,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Black,
+                            fontFamily = FontFamily.Monospace
+                        )
+                    }
+
+                    if (state.testPhase == TestPhase.WARMUP) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = Color(0xFF1E293B),
+                                modifier = Modifier
+                                    .border(1.dp, NordicCyan, RoundedCornerShape(6.dp))
+                                    .clickable { onSkipWarmup() }
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text("SKIP TO TEST ▶", color = NordicCyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    } else if (state.testPhase == TestPhase.TEST_STEADY) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = Color(0xFF1F2937),
+                                    modifier = Modifier
+                                        .border(1.dp, NordicCardBorder, RoundedCornerShape(6.dp))
+                                        .clickable { onAdjustDuration(-300L) }
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                ) {
+                                    Text("-5m", color = NordicLightGray, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = Color(0xFF1F2937),
+                                    modifier = Modifier
+                                        .border(1.dp, NordicCardBorder, RoundedCornerShape(6.dp))
+                                        .clickable { onAdjustDuration(300L) }
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                ) {
+                                    Text("+5m", color = NordicLightGray, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = Color(0xFF2E1010),
+                                modifier = Modifier
+                                    .border(1.dp, NordicCrimson.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+                                    .clickable { onStartRecoveryEarly() }
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text("START RECOVERY ▶", color = NordicCrimson, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                            }
+                        }
+                    } else if (state.testPhase == TestPhase.RECOVERY) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Stand still on rails. Peak: ${state.recoveryPeakHr ?: "--"} | 60s: -${state.recoveryDrop60 ?: "--"} | 120s: -${state.recoveryDrop120 ?: "--"}",
+                            color = NordicAmber,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Monospace
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+        }
+
         // Status Top Bar
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -278,6 +403,7 @@ fun ConsoleScreen(
         ) {
             Button(
                 onClick = if (state.isPaused) onResume else onPause,
+                enabled = state.testPhase != TestPhase.RECOVERY,
                 colors = ButtonDefaults.buttonColors(containerColor = if (state.isPaused) Color(0xFF2563EB) else Color(0xFF1C1D22)),
                 modifier = Modifier
                     .weight(1f)
