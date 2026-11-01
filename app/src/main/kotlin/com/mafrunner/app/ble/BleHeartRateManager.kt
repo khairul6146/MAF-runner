@@ -33,12 +33,16 @@ class BleHeartRateManager(private val context: Context) {
     private val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
     private val bluetoothAdapter: BluetoothAdapter? = bluetoothManager?.adapter
     private val parser = BleHeartRateParser()
+    private val batteryParser = BleBatteryParser()
 
     private val _connectionState = MutableStateFlow(BleConnectionState.DISCONNECTED)
     val connectionState: StateFlow<BleConnectionState> = _connectionState.asStateFlow()
 
     private val _heartRateFlow = MutableStateFlow<Int?>(null)
     val heartRateFlow: StateFlow<Int?> = _heartRateFlow.asStateFlow()
+
+    private val _batteryLevelFlow = MutableStateFlow<Int?>(null)
+    val batteryLevelFlow: StateFlow<Int?> = _batteryLevelFlow.asStateFlow()
 
     private val _discoveredDevices = MutableStateFlow<List<DiscoveredBleDevice>>(emptyList())
     val discoveredDevices: StateFlow<List<DiscoveredBleDevice>> = _discoveredDevices.asStateFlow()
@@ -51,6 +55,8 @@ class BleHeartRateManager(private val context: Context) {
     companion object {
         val HEART_RATE_SERVICE_UUID: UUID = UUID.fromString("0000180D-0000-1000-8000-00805F9B34FB")
         val HEART_RATE_MEASUREMENT_UUID: UUID = UUID.fromString("00002A37-0000-1000-8000-00805F9B34FB")
+        val BATTERY_SERVICE_UUID: UUID = UUID.fromString("0000180F-0000-1000-8000-00805F9B34FB")
+        val BATTERY_LEVEL_UUID: UUID = UUID.fromString("00002A19-0000-1000-8000-00805F9B34FB")
         val CLIENT_CHARACTERISTIC_CONFIG_UUID: UUID = UUID.fromString("00002902-0000-1000-8000-00805F9B34FB")
         private const val PREFS_NAME = "maf_ble_prefs"
         private const val KEY_SAVED_MAC = "saved_mac_address"
@@ -143,6 +149,7 @@ class BleHeartRateManager(private val context: Context) {
         activeGatt = null
         _connectionState.value = BleConnectionState.DISCONNECTED
         _heartRateFlow.value = null
+        _batteryLevelFlow.value = null
     }
 
     private val gattCallback = object : BluetoothGattCallback() {
@@ -154,6 +161,7 @@ class BleHeartRateManager(private val context: Context) {
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 _connectionState.value = BleConnectionState.DISCONNECTED
                 _heartRateFlow.value = null
+                _batteryLevelFlow.value = null
                 // Auto-reconnect loop
                 if (!isManualDisconnect) {
                     targetMacAddress?.let { mac ->
@@ -171,6 +179,7 @@ class BleHeartRateManager(private val context: Context) {
         @SuppressLint("MissingPermission")
         override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
+                // Heart Rate Service
                 val service = gatt.getService(HEART_RATE_SERVICE_UUID)
                 val characteristic = service?.getCharacteristic(HEART_RATE_MEASUREMENT_UUID)
                 if (characteristic != null) {
@@ -180,6 +189,45 @@ class BleHeartRateManager(private val context: Context) {
                         descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
                         gatt.writeDescriptor(descriptor)
                     }
+                }
+
+                // Battery Service
+                val batteryService = gatt.getService(BATTERY_SERVICE_UUID)
+                val batteryChar = batteryService?.getCharacteristic(BATTERY_LEVEL_UUID)
+                if (batteryChar != null) {
+                    gatt.readCharacteristic(batteryChar)
+                    if ((batteryChar.properties and BluetoothGattCharacteristic.PROPERTY_NOTIFY) != 0) {
+                        gatt.setCharacteristicNotification(batteryChar, true)
+                    }
+                }
+            }
+        }
+
+        override fun onCharacteristicRead(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            value: ByteArray,
+            status: Int
+        ) {
+            if (status == BluetoothGatt.GATT_SUCCESS && characteristic.uuid == BATTERY_LEVEL_UUID) {
+                val level = batteryParser.parse(value)
+                if (level != null) {
+                    _batteryLevelFlow.value = level
+                }
+            }
+        }
+
+        @Deprecated("Deprecated in Java for API 33+")
+        override fun onCharacteristicRead(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            status: Int
+        ) {
+            if (status == BluetoothGatt.GATT_SUCCESS && characteristic.uuid == BATTERY_LEVEL_UUID) {
+                @Suppress("DEPRECATION")
+                val level = batteryParser.parse(characteristic.value)
+                if (level != null) {
+                    _batteryLevelFlow.value = level
                 }
             }
         }
@@ -193,6 +241,11 @@ class BleHeartRateManager(private val context: Context) {
                 val measurement = parser.parse(value)
                 if (measurement.hr > 0) {
                     _heartRateFlow.value = measurement.hr
+                }
+            } else if (characteristic.uuid == BATTERY_LEVEL_UUID) {
+                val level = batteryParser.parse(value)
+                if (level != null) {
+                    _batteryLevelFlow.value = level
                 }
             }
         }
@@ -208,6 +261,11 @@ class BleHeartRateManager(private val context: Context) {
                     val measurement = parser.parse(bytes)
                     if (measurement.hr > 0) {
                         _heartRateFlow.value = measurement.hr
+                    }
+                } else if (characteristic.uuid == BATTERY_LEVEL_UUID) {
+                    val level = batteryParser.parse(bytes)
+                    if (level != null) {
+                        _batteryLevelFlow.value = level
                     }
                 }
             }
