@@ -32,15 +32,15 @@
 - Modify: `app/src/main/kotlin/com/mafrunner/app/cadence/AcousticCadenceDetector.kt`
 - Modify: `app/src/test/java/com/mafrunner/app/cadence/FootstrikePeakDetectorTest.kt`
 
-- [ ] **Step 1: Write failing test for live RMS energy and threshold flows**
+- [x] **Step 1: Write failing test for live RMS energy and threshold flows**
   Add unit tests in `FootstrikePeakDetectorTest.kt` verifying that `processSample()` emits `liveEnergyFlow`, `thresholdFlow`, and `lastStrikeTimestampMsFlow`.
-- [ ] **Step 2: Run test to confirm failure**
+- [x] **Step 2: Run test to confirm failure**
   Run: `Set-Location "C:\Users\khair\MyProjects\maf-runner-android"; .\gradlew.bat test --tests "com.mafrunner.app.cadence.FootstrikePeakDetectorTest" --console=plain`
-- [ ] **Step 3: Implement telemetry StateFlows in `FootstrikePeakDetector` & `AcousticCadenceDetector`**
+- [x] **Step 3: Implement telemetry StateFlows in `FootstrikePeakDetector` & `AcousticCadenceDetector`**
   Add `liveEnergy`, `currentThreshold`, and `lastStrikeTimestampMs` `StateFlow` properties.
-- [ ] **Step 4: Run tests to verify pass**
+- [x] **Step 4: Run tests to verify pass**
   Run: `Set-Location "C:\Users\khair\MyProjects\maf-runner-android"; .\gradlew.bat test --tests "com.mafrunner.app.cadence.FootstrikePeakDetectorTest" --console=plain`
-- [ ] **Step 5: Commit changes**
+- [x] **Step 5: Commit changes**
   Commit message: `feat: expose live audio energy and threshold streams in cadence engine`
 
 ---
@@ -51,17 +51,17 @@
 - Modify: `app/src/main/kotlin/com/mafrunner/app/ui/screens/SetupScreen.kt`
 - Modify: `app/src/main/kotlin/com/mafrunner/app/MainActivity.kt`
 
-- [ ] **Step 1: Implement `CadenceVuMeter` Composable component**
+- [x] **Step 1: Implement `CadenceVuMeter` Composable component**
   Create a smooth horizontal level bar with:
   - Background track with tick marks
   - Live animated energy level (0%–100%)
   - Vertical threshold marker corresponding to the slider setting
   - Color shift to `#00E676` and animated `"● STEP DETECTED"` badge on impact.
-- [ ] **Step 2: Connect SetupScreen to live audio detector in preview mode**
+- [x] **Step 2: Connect SetupScreen to live audio detector in preview mode**
   In `MainActivity.kt` and `SetupScreen.kt`, allow live calibration streaming when `cadenceEnabled` is active on the setup screen. Ensure `DisposableEffect` stops preview when leaving SetupScreen.
-- [ ] **Step 3: Test compilation**
+- [x] **Step 3: Test compilation**
   Run: `Set-Location "C:\Users\khair\MyProjects\maf-runner-android"; .\gradlew.bat compileDebugKotlin --console=plain`
-- [ ] **Step 4: Commit changes**
+- [x] **Step 4: Commit changes**
   Commit message: `feat: add real-time acoustic cadence VU calibration meter to setup screen`
 
 ---
@@ -73,15 +73,15 @@
 - Modify: `app/src/main/kotlin/com/mafrunner/app/service/WorkoutTrackingService.kt`
 - Modify: `app/src/main/kotlin/com/mafrunner/app/ui/screens/ConsoleScreen.kt`
 
-- [ ] **Step 1: Update session state to track footstrike timestamp**
+- [x] **Step 1: Update session state to track footstrike timestamp**
   Add `lastStrikeTimestampMs: Long = 0L` to `WorkoutSessionState`.
-- [ ] **Step 2: Forward strike events in `WorkoutTrackingService`**
+- [x] **Step 2: Forward strike events in `WorkoutTrackingService`**
   Collect `lastStrikeTimestampMs` from `cadenceDetector` and update `_sessionState`.
-- [ ] **Step 3: Render animated pulse dot in `ConsoleScreen`**
+- [x] **Step 3: Render animated pulse dot in `ConsoleScreen`**
   Add a responsive Laser Emerald beat dot adjacent to the Cadence display that lights up upon step registration.
-- [ ] **Step 4: Run unit tests**
+- [x] **Step 4: Run unit tests**
   Run: `Set-Location "C:\Users\khair\MyProjects\maf-runner-android"; .\gradlew.bat test --console=plain`
-- [ ] **Step 5: Commit changes**
+- [x] **Step 5: Commit changes**
   Commit message: `feat: add live cadence footstrike beat indicator to console screen`
 
 ---
@@ -95,13 +95,13 @@
 - Modify: `app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml`
 - Remove legacy default webp drawables if needed.
 
-- [ ] **Step 1: Create `ic_launcher_background.xml`**
+- [x] **Step 1: Create `ic_launcher_background.xml`**
   Deep `#000000` Nordic black with subtle aerodynamic angular speed lines.
-- [ ] **Step 2: Create `ic_launcher_foreground.xml`**
+- [x] **Step 2: Create `ic_launcher_foreground.xml`**
   Nordic "Heart-to-Stride" vector: precision ECG heartbeat in Laser Emerald (`#00E676`) sweeping into a dynamic forward runner silhouette in Laser Cyan (`#00D2FF`), properly scaled within the 66dp safe zone (108dp canvas).
-- [ ] **Step 3: Verify adaptive launcher XML references**
+- [x] **Step 3: Verify adaptive launcher XML references**
   Ensure standard and round mipmap XML files reference the new background and foreground vectors.
-- [ ] **Step 4: Commit changes**
+- [x] **Step 4: Commit changes**
   Commit message: `feat: create custom nordic athletic heart-to-stride app launcher icon`
 
 ---
@@ -112,11 +112,11 @@
 - Output: `MAFRunner.apk`
 - Output: `app/build/outputs/apk/debug/app-debug.apk`
 
-- [ ] **Step 1: Execute full test suite**
+- [x] **Step 1: Execute full test suite**
   Run: `Set-Location "C:\Users\khair\MyProjects\maf-runner-android"; .\gradlew.bat test --console=plain`
-- [ ] **Step 2: Assemble Debug APK**
+- [x] **Step 2: Assemble Debug APK**
   Run: `Set-Location "C:\Users\khair\MyProjects\maf-runner-android"; .\gradlew.bat assembleDebug --console=plain`
-- [ ] **Step 3: Copy and verify standalone `MAFRunner.apk`**
+- [x] **Step 3: Copy and verify standalone `MAFRunner.apk`**
   Verify file size and timestamp.
-- [ ] **Step 4: Final commit**
+- [x] **Step 4: Final commit**
   Commit message: `chore: update MAFRunner APK with cadence visualizer and custom app icon`
