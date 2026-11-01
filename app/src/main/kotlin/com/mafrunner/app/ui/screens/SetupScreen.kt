@@ -44,6 +44,7 @@ fun SetupScreen(
     liveAudioEnergy: Float = 0f,
     audioThreshold: Float = 0.6f,
     lastStrikeTimeMs: Long = 0L,
+    strapBatteryLevel: Int? = null,
     onStartWorkout: () -> Unit
 ) {
     Column(
@@ -218,54 +219,106 @@ fun SetupScreen(
                 .fillMaxWidth()
                 .border(1.dp, NordicCardBorder, RoundedCornerShape(14.dp))
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    val statusColor = when (bleState) {
-                        BleConnectionState.CONNECTED -> NordicEmerald
-                        BleConnectionState.CONNECTING -> NordicAmber
-                        BleConnectionState.SCANNING -> NordicCyan
-                        BleConnectionState.DISCONNECTED -> NordicCrimson
-                    }
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .clip(CircleShape)
-                            .background(statusColor)
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text("Heart Rate Sensor", color = NordicWhite, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        Text(
-                            text = when (bleState) {
-                                BleConnectionState.CONNECTED -> savedMac ?: "Connected"
-                                BleConnectionState.CONNECTING -> "Connecting..."
-                                BleConnectionState.SCANNING -> "Scanning for Coospo..."
-                                BleConnectionState.DISCONNECTED -> savedMac?.let { "Auto-reconnects to $it" } ?: "Not paired"
-                            },
-                            color = NordicLightGray,
-                            fontSize = 11.sp,
-                            fontFamily = FontFamily.Monospace
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        val statusColor = when (bleState) {
+                            BleConnectionState.CONNECTED -> NordicEmerald
+                            BleConnectionState.CONNECTING -> NordicAmber
+                            BleConnectionState.SCANNING -> NordicCyan
+                            BleConnectionState.DISCONNECTED -> NordicCrimson
+                        }
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(statusColor)
                         )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text("Heart Rate Sensor", color = NordicWhite, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text(
+                                text = when (bleState) {
+                                    BleConnectionState.CONNECTED -> savedMac ?: "Connected"
+                                    BleConnectionState.CONNECTING -> "Connecting..."
+                                    BleConnectionState.SCANNING -> "Scanning for Coospo..."
+                                    BleConnectionState.DISCONNECTED -> savedMac?.let { "Auto-reconnects to $it" } ?: "Not paired"
+                                },
+                                color = NordicLightGray,
+                                fontSize = 11.sp,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        if (bleState == BleConnectionState.CONNECTED && strapBatteryLevel != null) {
+                            val batteryColor = when {
+                                strapBatteryLevel >= 50 -> NordicEmerald
+                                strapBatteryLevel >= 20 -> NordicAmber
+                                else -> NordicCrimson
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = Color(0xFF141518),
+                                modifier = Modifier
+                                    .border(1.dp, batteryColor.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+                                    .padding(horizontal = 8.dp, vertical = 5.dp)
+                            ) {
+                                Text(
+                                    text = "$strapBatteryLevel% 🔋",
+                                    color = batteryColor,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace
+                                )
+                            }
+                        }
+
+                        Button(
+                            onClick = onScanBle,
+                            colors = ButtonDefaults.buttonColors(containerColor = NordicCardBorder),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                if (bleState == BleConnectionState.CONNECTED) "Change" else "Scan",
+                                color = NordicWhite,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
 
-                Button(
-                    onClick = onScanBle,
-                    colors = ButtonDefaults.buttonColors(containerColor = NordicCardBorder),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        if (bleState == BleConnectionState.CONNECTED) "Change" else "Scan",
-                        color = NordicWhite,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                if (bleState == BleConnectionState.CONNECTED && strapBatteryLevel != null && strapBatteryLevel < 20) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFF2E1010),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, NordicCrimson.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("⚠️", fontSize = 12.sp)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Strap battery low (${strapBatteryLevel}%)",
+                                color = NordicCrimson,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
+                    }
                 }
             }
         }

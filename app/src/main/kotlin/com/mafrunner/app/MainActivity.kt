@@ -124,6 +124,7 @@ fun MainAppContainer(
     // Service States
     val sessionState by workoutService?.sessionState?.collectAsState() ?: remember { mutableStateOf(WorkoutSessionState()) }
     val bleState by workoutService?.bleManager?.connectionState?.collectAsState() ?: remember { mutableStateOf(BleConnectionState.DISCONNECTED) }
+    val bleBattery by workoutService?.bleManager?.batteryLevelFlow?.collectAsState() ?: remember { mutableStateOf(null) }
     val discoveredDevices by workoutService?.bleManager?.discoveredDevices?.collectAsState() ?: remember { mutableStateOf(emptyList()) }
     val savedMac = workoutService?.bleManager?.getSavedMacAddress()
 
@@ -233,6 +234,7 @@ fun MainAppContainer(
                     liveAudioEnergy = liveEnergy,
                     audioThreshold = audioThreshold,
                     lastStrikeTimeMs = lastStrikeTimeMs,
+                    strapBatteryLevel = bleBattery,
                     onStartWorkout = {
                         showTestSetup = true
                     }
