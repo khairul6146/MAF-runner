@@ -264,10 +264,16 @@ fun MainAppContainer(
                             ExportManager.exportAll(activity, workouts, repo)
                         }
                     },
-                    onSaveWorkout = { id, speed, distance, isBenchmark ->
+                    onSaveWorkout = { id, durationSec, speed, distance, isBenchmark ->
                         scope.launch {
                             val repo = workoutService?.repository ?: WorkoutRepository(activity)
-                            repo.updateWorkoutDetails(id, speed, distance, isBenchmark)
+                            repo.updateWorkoutDetails(
+                                workoutId = id,
+                                speed = speed,
+                                distance = distance,
+                                isBenchmark = isBenchmark,
+                                durationSec = durationSec
+                            )
                         }
                     },
                     onDeleteWorkout = { id ->

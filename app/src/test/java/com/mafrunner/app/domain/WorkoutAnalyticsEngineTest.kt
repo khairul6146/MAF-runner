@@ -55,6 +55,24 @@ class WorkoutAnalyticsEngineTest {
         assertEquals(0.6f, analytics.speedProgressionDelta ?: 0f, 0.01f)
     }
 
+    @Test
+    fun testRecoveryDropAverages() {
+        val now = 100_000_000L
+        val w1 = createWorkout(1L, now - 1000L, 1800, 1600, 8.0f, true).copy(
+            isGuidedTest = true,
+            recoveryDrop60 = 24,
+            recoveryDrop120 = 40
+        )
+        val w2 = createWorkout(2L, now - 500L, 1800, 1700, 8.5f, true).copy(
+            isGuidedTest = true,
+            recoveryDrop60 = 28,
+            recoveryDrop120 = 48
+        )
+        val analytics = engine.computeAnalytics(listOf(w1, w2), AnalyticsPeriod.WEEK, nowMs = now)
+        assertEquals(26, analytics.avgRecoveryDrop60)
+        assertEquals(44, analytics.avgRecoveryDrop120)
+    }
+
     private fun createWorkout(
         id: Long,
         startTime: Long,

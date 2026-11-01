@@ -1,6 +1,7 @@
 package com.mafrunner.app.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -26,7 +27,7 @@ fun PostRunSummaryDialog(
 ) {
     var speedText by remember { mutableStateOf("") }
     var distanceText by remember { mutableStateOf("") }
-    var isBenchmark by remember { mutableStateOf(false) }
+    var isBenchmark by remember { mutableStateOf(workout.isBenchmark || workout.isGuidedTest) }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -68,6 +69,30 @@ fun PostRunSummaryDialog(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("IN ZONE", color = NordicLightGray, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                         Text("${workout.inZonePercentage}%", color = NordicEmerald, fontSize = 20.sp, fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace)
+                    }
+                }
+
+                if (workout.recoveryDrop60 != null || workout.recoveryDrop120 != null) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color(0xFF101B14),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, NordicEmerald.copy(alpha = 0.4f), RoundedCornerShape(10.dp))
+                            .padding(10.dp)
+                    ) {
+                        Column {
+                            Text("CARDIAC RECOVERY", color = NordicEmerald, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                "Peak: ${workout.recoveryPeakHr ?: "--"} bpm • 1m: -${workout.recoveryDrop60 ?: "--"} bpm • 2m: -${workout.recoveryDrop120 ?: "--"} bpm",
+                                color = NordicWhite,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
                     }
                 }
 

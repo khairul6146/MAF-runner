@@ -28,7 +28,7 @@ import java.util.*
 fun HistoryScreen(
     workouts: List<WorkoutEntity>,
     onExportAll: () -> Unit,
-    onSaveWorkout: (id: Long, speed: Float?, distance: Float?, isBenchmark: Boolean) -> Unit,
+    onSaveWorkout: (id: Long, durationSec: Long?, speed: Float?, distance: Float?, isBenchmark: Boolean) -> Unit,
     onDeleteWorkout: (id: Long) -> Unit,
     onExportSingle: (workout: WorkoutEntity) -> Unit
 ) {
@@ -200,6 +200,17 @@ fun HistoryScreen(
                         if (overFrac > 0) Box(modifier = Modifier.weight(overFrac.coerceAtLeast(0.01f)).fillMaxHeight().background(NordicCrimson))
                     }
                 }
+
+                if (analytics.avgRecoveryDrop60 != null) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = "Avg 1m Cardiac Drop: -${analytics.avgRecoveryDrop60} bpm" + (analytics.avgRecoveryDrop120?.let { " • 2m: -$it bpm" } ?: ""),
+                        color = NordicEmerald,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Monospace
+                    )
+                }
             }
         }
 
@@ -257,7 +268,7 @@ fun HistoryScreen(
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.Bold
                                     )
-                                    if (item.isBenchmark) {
+                                    if (item.isBenchmark || item.isGuidedTest) {
                                         Spacer(modifier = Modifier.width(6.dp))
                                         Surface(
                                             shape = RoundedCornerShape(4.dp),
@@ -266,6 +277,21 @@ fun HistoryScreen(
                                             Text(
                                                 text = "MAF TEST",
                                                 color = NordicAmber,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Black,
+                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                    if (item.recoveryDrop60 != null) {
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = Color(0xFF0F2618)
+                                        ) {
+                                            Text(
+                                                text = "HR -${item.recoveryDrop60}",
+                                                color = NordicEmerald,
                                                 fontSize = 9.sp,
                                                 fontWeight = FontWeight.Black,
                                                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
@@ -331,8 +357,8 @@ fun HistoryScreen(
     selectedWorkout?.let { workout ->
         WorkoutDetailDialog(
             workout = workout,
-            onSave = { speed, distance, isBenchmark ->
-                onSaveWorkout(workout.id, speed, distance, isBenchmark)
+            onSave = { durationSec, speed, distance, isBenchmark ->
+                onSaveWorkout(workout.id, durationSec, speed, distance, isBenchmark)
                 selectedWorkout = null
             },
             onDelete = { id ->

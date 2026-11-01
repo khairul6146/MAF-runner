@@ -28,11 +28,13 @@ import java.util.*
 @Composable
 fun WorkoutDetailDialog(
     workout: WorkoutEntity,
-    onSave: (speed: Float?, distance: Float?, isBenchmark: Boolean) -> Unit,
+    onSave: (durationSec: Long, speed: Float?, distance: Float?, isBenchmark: Boolean) -> Unit,
     onDelete: (workoutId: Long) -> Unit,
     onExport: (workout: WorkoutEntity) -> Unit,
     onDismiss: () -> Unit
 ) {
+    var durationMinsText by remember { mutableStateOf((workout.durationSec / 60).toString()) }
+    var durationSecsText by remember { mutableStateOf((workout.durationSec % 60).toString()) }
     var speedText by remember { mutableStateOf(workout.treadmillSpeed?.toString() ?: "") }
     var distanceText by remember { mutableStateOf(workout.treadmillDistance?.toString() ?: "") }
     var isBenchmark by remember { mutableStateOf(workout.isBenchmark) }
@@ -62,8 +64,8 @@ fun WorkoutDetailDialog(
                 ) {
                     Column {
                         Text(
-                            text = "WORKOUT DETAILS",
-                            color = NordicLightGray,
+                            text = if (workout.isGuidedTest) "GUIDED MAF TEST" else "WORKOUT DETAILS",
+                            color = if (workout.isGuidedTest) NordicEmerald else NordicLightGray,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.2.sp
@@ -75,7 +77,7 @@ fun WorkoutDetailDialog(
                             fontWeight = FontWeight.Bold
                         )
                     }
-                    if (isBenchmark) {
+                    if (isBenchmark || workout.isGuidedTest) {
                         Surface(
                             shape = RoundedCornerShape(4.dp),
                             color = Color(0xFF332400)
@@ -145,6 +147,52 @@ fun WorkoutDetailDialog(
                     }
                 }
 
+                // Cardiac Recovery Score Card (if recorded)
+                if (workout.recoveryDrop60 != null || workout.recoveryDrop120 != null) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFF101B14),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, NordicEmerald.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                            .padding(12.dp)
+                    ) {
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "CARDIAC RECOVERY SCORE",
+                                    color = NordicEmerald,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.8.sp
+                                )
+                                workout.recoveryDrop60?.let { drop60 ->
+                                    val (tag, color) = when {
+                                        drop60 >= 25 -> "Excellent" to NordicEmerald
+                                        drop60 >= 15 -> "Normal" to NordicCyan
+                                        else -> "Elevated Fatigue" to NordicAmber
+                                    }
+                                    Text(tag, color = color, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Peak: ${workout.recoveryPeakHr ?: "--"} bpm", color = NordicLightGray, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+                                Text("1m Drop: -${workout.recoveryDrop60 ?: "--"} bpm", color = NordicEmerald, fontSize = 11.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
+                                Text("2m Drop: -${workout.recoveryDrop120 ?: "--"} bpm", color = NordicCyan, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+                            }
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(14.dp))
 
                 // Zone Time Distribution
@@ -182,7 +230,44 @@ fun WorkoutDetailDialog(
                 HorizontalDivider(color = NordicCardBorder)
                 Spacer(modifier = Modifier.height(14.dp))
 
-                Text("EDIT TREADMILL DATA", color = NordicLightGray, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                Text("EDIT RECORD DATA", color = NordicLightGray, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Editable Duration Field
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    OutlinedTextField(
+                        value = durationMinsText,
+                        onValueChange = { durationMinsText = it },
+                        label = { Text("Duration (Mins)") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = NordicEmerald,
+                            unfocusedBorderColor = NordicCardBorder,
+                            focusedTextColor = NordicWhite,
+                            unfocusedTextColor = NordicWhite
+                        )
+                    )
+                    OutlinedTextField(
+                        value = durationSecsText,
+                        onValueChange = { durationSecsText = it },
+                        label = { Text("Duration (Secs)") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = NordicEmerald,
+                            unfocusedBorderColor = NordicCardBorder,
+                            focusedTextColor = NordicWhite,
+                            unfocusedTextColor = NordicWhite
+                        )
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(10.dp))
 
                 // Speed & Distance Inputs
@@ -253,9 +338,12 @@ fun WorkoutDetailDialog(
                 // Save button
                 Button(
                     onClick = {
+                        val mins = durationMinsText.toLongOrNull() ?: (workout.durationSec / 60)
+                        val secs = durationSecsText.toLongOrNull() ?: (workout.durationSec % 60)
+                        val finalDurationSec = (mins * 60) + secs
                         val speed = speedText.toFloatOrNull()
                         val distance = distanceText.toFloatOrNull()
-                        onSave(speed, distance, isBenchmark)
+                        onSave(finalDurationSec, speed, distance, isBenchmark)
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = NordicWhite),
                     modifier = Modifier

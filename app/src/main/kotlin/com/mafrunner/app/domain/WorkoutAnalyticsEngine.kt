@@ -21,7 +21,9 @@ data class PeriodAnalytics(
     val inZoneSec: Long,
     val overSec: Long,
     val speedProgressionDelta: Float?,
-    val benchmarkCount: Int
+    val benchmarkCount: Int,
+    val avgRecoveryDrop60: Int? = null,
+    val avgRecoveryDrop120: Int? = null
 )
 
 class WorkoutAnalyticsEngine {
@@ -78,6 +80,16 @@ class WorkoutAnalyticsEngine {
             latest - earliest
         } else null
 
+        val guidedTestsWithDrop60 = filtered.filter { it.isGuidedTest && it.recoveryDrop60 != null }
+        val avgDrop60 = if (guidedTestsWithDrop60.isNotEmpty()) {
+            guidedTestsWithDrop60.mapNotNull { it.recoveryDrop60 }.average().toInt()
+        } else null
+
+        val guidedTestsWithDrop120 = filtered.filter { it.isGuidedTest && it.recoveryDrop120 != null }
+        val avgDrop120 = if (guidedTestsWithDrop120.isNotEmpty()) {
+            guidedTestsWithDrop120.mapNotNull { it.recoveryDrop120 }.average().toInt()
+        } else null
+
         return PeriodAnalytics(
             period = period,
             totalWorkouts = filtered.size,
@@ -90,7 +102,9 @@ class WorkoutAnalyticsEngine {
             inZoneSec = totalInZone,
             overSec = totalOver,
             speedProgressionDelta = speedProgression,
-            benchmarkCount = benchmarks.size
+            benchmarkCount = benchmarks.size,
+            avgRecoveryDrop60 = avgDrop60,
+            avgRecoveryDrop120 = avgDrop120
         )
     }
 }
