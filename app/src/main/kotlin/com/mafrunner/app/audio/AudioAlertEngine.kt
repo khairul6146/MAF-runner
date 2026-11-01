@@ -29,6 +29,7 @@ class AudioAlertEngine(private val context: Context) {
     private var floorSoundId: Int = 0
     private var activeFocusRequest: AudioFocusRequest? = null
     private val handler = Handler(Looper.getMainLooper())
+    val speechCoach = SpeechCoachEngine(context)
 
     init {
         val audioAttributes = AudioAttributes.Builder()
@@ -114,6 +115,7 @@ class AudioAlertEngine(private val context: Context) {
 
     fun release() {
         handler.removeCallbacksAndMessages(null)
+        speechCoach.shutdown()
         soundPool.release()
     }
 }
