@@ -1,5 +1,7 @@
 package com.mafrunner.app.ui.screens
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,6 +15,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -37,6 +41,9 @@ fun SetupScreen(
     onToggleCadence: (Boolean) -> Unit,
     cadenceSensitivity: Float,
     onSensitivityChange: (Float) -> Unit,
+    liveAudioEnergy: Float = 0f,
+    audioThreshold: Float = 0.6f,
+    lastStrikeTimeMs: Long = 0L,
     onStartWorkout: () -> Unit
 ) {
     Column(
@@ -315,6 +322,13 @@ fun SetupScreen(
                             modifier = Modifier.padding(start = 6.dp)
                         )
                     }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    CadenceVuMeter(
+                        liveEnergy = liveAudioEnergy,
+                        threshold = audioThreshold,
+                        lastStrikeTimeMs = lastStrikeTimeMs
+                    )
                 }
             }
         }
@@ -338,5 +352,123 @@ fun SetupScreen(
                 letterSpacing = 1.sp
             )
         }
+    }
+}
+
+@Composable
+fun CadenceVuMeter(
+    liveEnergy: Float,
+    threshold: Float,
+    lastStrikeTimeMs: Long,
+    modifier: Modifier = Modifier
+) {
+    val animatedEnergy by animateFloatAsState(
+        targetValue = liveEnergy.coerceIn(0f, 1f),
+        label = "LiveVuEnergy"
+    )
+    val isTriggered = liveEnergy >= threshold && liveEnergy > 0.05f
+    val isRecentStrike = (System.currentTimeMillis() - lastStrikeTimeMs) < 350L
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "REAL-TIME ACOUSTIC LEVEL",
+                color = NordicLightGray,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.8.sp
+            )
+            Surface(
+                shape = RoundedCornerShape(4.dp),
+                color = if (isRecentStrike) NordicEmerald.copy(alpha = 0.2f) else Color(0xFF1C1D22),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    if (isRecentStrike) NordicEmerald else NordicCardBorder
+                )
+            ) {
+                Text(
+                    text = if (isRecentStrike) "● STEP DETECTED" else "CALIBRATING",
+                    color = if (isRecentStrike) NordicEmerald else NordicLightGray,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Black,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        // Level bar with threshold notch
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(18.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(Color(0xFF141518))
+                .border(
+                    1.dp,
+                    if (isRecentStrike) NordicEmerald.copy(alpha = 0.6f) else NordicCardBorder,
+                    RoundedCornerShape(4.dp)
+                )
+        ) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val width = size.width
+                val height = size.height
+                val fillWidth = width * animatedEnergy.coerceIn(0f, 1f)
+                val thresholdX = width * threshold.coerceIn(0f, 1f)
+
+                // Fill bar
+                if (fillWidth > 0f) {
+                    val barColor = if (isTriggered) NordicEmerald else NordicCyan
+                    drawRect(
+                        color = barColor,
+                        topLeft = Offset.Zero,
+                        size = Size(fillWidth, height)
+                    )
+                }
+
+                // Threshold vertical marker notch
+                drawLine(
+                    color = NordicWhite,
+                    start = Offset(thresholdX, 0f),
+                    end = Offset(thresholdX, height),
+                    strokeWidth = 2.dp.toPx()
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "LEVEL: ${(liveEnergy * 100).toInt()}%",
+                color = if (isTriggered) NordicEmerald else NordicCyan,
+                fontSize = 10.sp,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "TRIGGER LINE: ${(threshold * 100).toInt()}%",
+                color = NordicLightGray,
+                fontSize = 10.sp,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "Tap deck or jog to test. Set line safely above treadmill motor hum.",
+            color = NordicMuted,
+            fontSize = 10.sp,
+            lineHeight = 13.sp
+        )
     }
 }

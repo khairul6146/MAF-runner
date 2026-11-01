@@ -36,6 +36,7 @@ import com.mafrunner.app.export.ExportManager
 import com.mafrunner.app.ui.screens.*
 import com.mafrunner.app.ui.theme.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableStateFlow
 
 class MainActivity : ComponentActivity() {
 
@@ -125,6 +126,29 @@ fun MainAppContainer(
     val discoveredDevices by workoutService?.bleManager?.discoveredDevices?.collectAsState() ?: remember { mutableStateOf(emptyList()) }
     val savedMac = workoutService?.bleManager?.getSavedMacAddress()
 
+    // Real-time Cadence Telemetry Flows
+    val liveEnergy by (workoutService?.cadenceDetector?.liveEnergy ?: remember { MutableStateFlow(0f) }).collectAsState()
+    val audioThreshold by (workoutService?.cadenceDetector?.currentThreshold ?: remember { MutableStateFlow(0.6f) }).collectAsState()
+    val lastStrikeTimeMs by (workoutService?.cadenceDetector?.lastStrikeTimestampMs ?: remember { MutableStateFlow(0L) }).collectAsState()
+
+    // Real-time audio calibration preview on Setup Screen
+    LaunchedEffect(currentTab, cadenceEnabled, sessionState.isActive, workoutService) {
+        if (currentTab == 0 && cadenceEnabled && !sessionState.isActive) {
+            workoutService?.cadenceDetector?.setSensitivity(cadenceSensitivity)
+            workoutService?.cadenceDetector?.start()
+        } else if (!sessionState.isActive) {
+            workoutService?.cadenceDetector?.stop()
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            if (workoutService?.sessionState?.value?.isActive != true) {
+                workoutService?.cadenceDetector?.stop()
+            }
+        }
+    }
+
     // Workouts DB
     val repository = remember { WorkoutRepository(activity) }
     val workouts by repository.workoutsFlow.collectAsState(initial = emptyList())
@@ -205,6 +229,9 @@ fun MainAppContainer(
                         cadenceSensitivity = it
                         workoutService?.cadenceDetector?.setSensitivity(it)
                     },
+                    liveAudioEnergy = liveEnergy,
+                    audioThreshold = audioThreshold,
+                    lastStrikeTimeMs = lastStrikeTimeMs,
                     onStartWorkout = {
                         workoutService?.configureZones(age, category)
                         workoutService?.startWorkout(enableCadence = cadenceEnabled)
