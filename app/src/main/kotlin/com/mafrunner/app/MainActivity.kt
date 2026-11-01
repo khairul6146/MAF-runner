@@ -261,6 +261,24 @@ fun MainAppContainer(
                             val repo = workoutService?.repository ?: WorkoutRepository(activity)
                             ExportManager.exportAll(activity, workouts, repo)
                         }
+                    },
+                    onSaveWorkout = { id, speed, distance, isBenchmark ->
+                        scope.launch {
+                            val repo = workoutService?.repository ?: WorkoutRepository(activity)
+                            repo.updateWorkoutDetails(id, speed, distance, isBenchmark)
+                        }
+                    },
+                    onDeleteWorkout = { id ->
+                        scope.launch {
+                            val repo = workoutService?.repository ?: WorkoutRepository(activity)
+                            repo.deleteWorkout(id)
+                        }
+                    },
+                    onExportSingle = { workout ->
+                        scope.launch {
+                            val repo = workoutService?.repository ?: WorkoutRepository(activity)
+                            ExportManager.exportSingle(activity, workout, repo)
+                        }
                     }
                 )
             }

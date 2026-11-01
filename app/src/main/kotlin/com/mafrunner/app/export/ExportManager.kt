@@ -115,4 +115,40 @@ object ExportManager {
 
         generatedFiles.size
     }
+
+    suspend fun exportSingle(
+        activity: Activity,
+        workout: WorkoutEntity,
+        repository: WorkoutRepository
+    ): Int = withContext(Dispatchers.IO) {
+        val exportDir = File(activity.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "MAFRunner").apply {
+            mkdirs()
+        }
+        val samples = repository.getSamplesForWorkout(workout.id)
+        val dateStr = fileDateFormatter.format(Date(workout.startTime))
+
+        val tcxFile = File(exportDir, "run_${workout.id}_$dateStr.tcx")
+        tcxFile.writeText(tcxExporter.export(workout, samples))
+
+        val csvFile = File(exportDir, "run_${workout.id}_$dateStr.csv")
+        csvFile.writeText(csvExporter.export(workout, samples))
+
+        val uris = ArrayList<Uri>()
+        for (f in listOf(tcxFile, csvFile)) {
+            try {
+                uris.add(FileProvider.getUriForFile(activity, "${activity.packageName}.fileprovider", f))
+            } catch (_: Exception) {}
+        }
+
+        withContext(Dispatchers.Main) {
+            val shareIntent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                type = "*/*"
+                putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            activity.startActivity(Intent.createChooser(shareIntent, "Share Workout #${workout.id}"))
+            Toast.makeText(activity, "Exported workout #${workout.id} files", Toast.LENGTH_SHORT).show()
+        }
+        2
+    }
 }
