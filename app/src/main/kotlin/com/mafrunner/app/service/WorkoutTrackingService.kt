@@ -106,6 +106,13 @@ class WorkoutTrackingService : Service() {
                 _sessionState.value = _sessionState.value.copy(currentCadence = spm)
             }
         }
+        scope.launch {
+            cadenceDetector.lastStrikeTimestampMs.collect { timestamp ->
+                if (timestamp > 0L) {
+                    _sessionState.value = _sessionState.value.copy(lastStrikeTimestampMs = timestamp)
+                }
+            }
+        }
     }
 
     fun configureZones(age: Int, category: MafCategory, manualCeiling: Int? = null) {

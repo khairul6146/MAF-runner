@@ -181,7 +181,17 @@ fun ConsoleScreen(
                     modifier = Modifier.padding(14.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("ACOUSTIC CADENCE", color = NordicLightGray, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    val isRecentStrike = (System.currentTimeMillis() - state.lastStrikeTimestampMs) < 250L
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(7.dp)
+                                .clip(CircleShape)
+                                .background(if (isRecentStrike) NordicEmerald else NordicMuted)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("ACOUSTIC CADENCE", color = NordicLightGray, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(

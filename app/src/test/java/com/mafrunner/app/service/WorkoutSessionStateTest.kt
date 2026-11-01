@@ -27,4 +27,10 @@ class WorkoutSessionStateTest {
         val state = WorkoutSessionState(elapsedSeconds = 125)
         assertEquals("02:05", state.formattedTime)
     }
+
+    @Test
+    fun testLastStrikeTimestamp() {
+        val state = WorkoutSessionState(lastStrikeTimestampMs = 15000L)
+        assertEquals(15000L, state.lastStrikeTimestampMs)
+    }
 }

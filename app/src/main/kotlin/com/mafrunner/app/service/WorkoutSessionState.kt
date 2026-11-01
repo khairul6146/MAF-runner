@@ -6,6 +6,7 @@ data class WorkoutSessionState(
     val elapsedSeconds: Long = 0L,
     val currentHr: Int? = null,
     val currentCadence: Int = 0,
+    val lastStrikeTimestampMs: Long = 0L,
     val underSeconds: Long = 0L,
     val inZoneSeconds: Long = 0L,
     val overSeconds: Long = 0L
