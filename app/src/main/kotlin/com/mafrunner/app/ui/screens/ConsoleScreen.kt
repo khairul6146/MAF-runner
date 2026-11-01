@@ -218,6 +218,23 @@ fun ConsoleScreen(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text("COOSPO H9Z", color = NordicLightGray, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                if (state.strapBatteryLevel != null) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("|", color = Color(0xFF333333), fontSize = 11.sp)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    val batteryColor = when {
+                        state.strapBatteryLevel >= 50 -> NordicEmerald
+                        state.strapBatteryLevel >= 20 -> NordicAmber
+                        else -> NordicCrimson
+                    }
+                    Text(
+                        text = "${state.strapBatteryLevel}% 🔋",
+                        color = batteryColor,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Monospace
+                    )
+                }
             }
 
             Text(
