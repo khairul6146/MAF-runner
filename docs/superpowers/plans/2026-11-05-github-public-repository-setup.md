@@ -36,18 +36,18 @@
 - Consumes: Existing git index and `.gitignore`.
 - Produces: Sanitized git index with `.superpowers/` untracked and excluded from future commits.
 
-- [ ] **Step 1: Untrack `.superpowers/` from git index**
+- [x] **Step 1: Untrack `.superpowers/` from git index**
   Run: `git rm -r --cached .superpowers/`
   Expected: All files under `.superpowers/` removed from index while preserved on disk.
 
-- [ ] **Step 2: Add `.superpowers/` to `.gitignore`**
+- [x] **Step 2: Add `.superpowers/` to `.gitignore`**
   Append `.superpowers/` to `.gitignore`.
 
-- [ ] **Step 3: Verify no sensitive files or local properties are tracked**
+- [x] **Step 3: Verify no sensitive files or local properties are tracked**
   Run: `git status`
   Expected: Deleted tracked files under `.superpowers/`, `.gitignore` modified. `local.properties` remains untracked.
 
-- [ ] **Step 4: Commit git hygiene changes**
+- [x] **Step 4: Commit git hygiene changes**
   Run:
   ```bash
   git add .gitignore
@@ -65,13 +65,13 @@
 - Consumes: Copyright details (Year 2026, khairul6146).
 - Produces: Standard MIT License file.
 
-- [ ] **Step 1: Create `LICENSE` file**
+- [x] **Step 1: Create `LICENSE` file**
   Write standard MIT License text with Copyright (c) 2026 khairul6146.
 
-- [ ] **Step 2: Verify `LICENSE` file existence and formatting**
+- [x] **Step 2: Verify `LICENSE` file existence and formatting**
   Verify file content matches standard OSI MIT license.
 
-- [ ] **Step 3: Commit `LICENSE`**
+- [x] **Step 3: Commit `LICENSE`**
   Run:
   ```bash
   git add LICENSE
@@ -89,7 +89,7 @@
 - Consumes: Architecture, feature specifications, hardware requirements, and build instructions.
 - Produces: Full documentation of MAF Runner Android app for public GitHub release.
 
-- [ ] **Step 1: Draft `README.md`**
+- [x] **Step 1: Draft `README.md`**
   Include:
   - Project Title, Tagline, and Status Badges.
   - What is MAF Runner? (180 Formula aerobic base training, OLED Nordic UI).
@@ -106,10 +106,10 @@
   - Hardware Compatibility (Coospo H9Z, Polar H10, Garmin HRM-Pro/Dual, Wahoo TICKR).
   - Building & Installation Guide (`./gradlew assembleDebug`).
 
-- [ ] **Step 2: Verify Markdown formatting and file structure**
+- [x] **Step 2: Verify Markdown formatting and file structure**
   Verify no syntax issues, proper heading padding, and clean link references.
 
-- [ ] **Step 3: Commit `README.md`**
+- [x] **Step 3: Commit `README.md`**
   Run:
   ```bash
   git add README.md
@@ -127,23 +127,23 @@
 - Consumes: Local `main` branch, Remote URL `https://github.com/khairul6146/MAF-runner.git`.
 - Produces: Upstream-tracked `origin/main` branch on GitHub.
 
-- [ ] **Step 1: Configure git remote origin**
+- [x] **Step 1: Configure git remote origin**
   Run: `git remote add origin https://github.com/khairul6146/MAF-runner.git`
   Expected: Remote `origin` configured.
 
-- [ ] **Step 2: Verify remote configuration**
+- [x] **Step 2: Verify remote configuration**
   Run: `git remote -v`
   Expected: Both `fetch` and `push` point to `https://github.com/khairul6146/MAF-runner.git`.
 
-- [ ] **Step 3: Verify current branch is `main`**
+- [x] **Step 3: Verify current branch is `main`**
   Run: `git branch --show-current`
   Expected: `main`.
 
-- [ ] **Step 4: Push to GitHub with upstream tracking**
+- [x] **Step 4: Push to GitHub with upstream tracking**
   Run: `git push -u origin main`
   Expected: Successful push with objects written and `main -> main (forced-update: false)`.
 
-- [ ] **Step 5: Verify git status and branch tracking**
+- [x] **Step 5: Verify git status and branch tracking**
   Run:
   - `git status`
   - `git branch -vv`
