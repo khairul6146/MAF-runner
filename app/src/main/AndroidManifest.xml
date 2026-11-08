@@ -14,6 +14,9 @@
     <!-- Audio / Microphone for Acoustic Cadence -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
+    <!-- Haptic alerts for MAF ceiling limit warnings -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
     <!-- Keep CPU awake on treadmill console -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
