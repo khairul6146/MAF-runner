@@ -2,26 +2,39 @@ package com.mafrunner.app.ui.screens
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mafrunner.app.domain.MafZone
 import com.mafrunner.app.domain.MafZones
 import com.mafrunner.app.domain.TestPhase
 import com.mafrunner.app.service.WorkoutSessionState
+import com.mafrunner.app.ui.components.RealtimeHeartRateGraph
 import com.mafrunner.app.ui.theme.*
 
 @Composable
@@ -33,7 +46,8 @@ fun ConsoleScreen(
     onFinish: () -> Unit,
     onSkipWarmup: () -> Unit = {},
     onAdjustDuration: (Long) -> Unit = {},
-    onStartRecoveryEarly: () -> Unit = {}
+    onStartRecoveryEarly: () -> Unit = {},
+    ecgSamples: List<Int> = emptyList()
 ) {
     val currentHr = state.currentHr
     val isConnected = currentHr != null && currentHr > 0
@@ -70,12 +84,34 @@ fun ConsoleScreen(
         targetBorderColor
     }
 
+    // ECG telemetry rolling buffer & view mode state
+    val ecgBuffer = remember { mutableStateListOf<Int>() }
+    var hasEcgTelemetry by remember { mutableStateOf(false) }
+    var showEcgMode by remember { mutableStateOf(false) }
+
+    LaunchedEffect(ecgSamples) {
+        if (ecgSamples.isNotEmpty()) {
+            hasEcgTelemetry = true
+            ecgBuffer.addAll(ecgSamples)
+            // Maintain a rolling buffer of 300 samples (~2.4s at 125Hz)
+            val overflow = ecgBuffer.size - 300
+            if (overflow > 0) {
+                repeat(overflow) {
+                    if (ecgBuffer.isNotEmpty()) {
+                        ecgBuffer.removeAt(0)
+                    }
+                }
+            }
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(NordicBlack)
             .border(4.dp, borderColor)
-            .padding(20.dp),
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (state.isGuidedTest) {
@@ -102,9 +138,9 @@ fun ConsoleScreen(
                             }
                             Box(
                                 modifier = Modifier
-                                    .size(8.dp)
-                                    .clip(CircleShape)
-                                    .background(phaseColor)
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(phaseColor)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
@@ -198,7 +234,7 @@ fun ConsoleScreen(
             Spacer(modifier = Modifier.height(10.dp))
         }
 
-        // Status Top Bar
+        // Status Top Bar with Straps, Battery & HRV telemetry
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -235,6 +271,19 @@ fun ConsoleScreen(
                         fontFamily = FontFamily.Monospace
                     )
                 }
+                if (state.currentHrvRmssd != null) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("|", color = Color(0xFF333333), fontSize = 11.sp)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    val hrvFormatted = if (state.currentHrvRmssd % 1.0 == 0.0) "${state.currentHrvRmssd.toInt()}" else "${state.currentHrvRmssd}"
+                    Text(
+                        text = "HRV: $hrvFormatted ms",
+                        color = NordicEmerald,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Monospace
+                    )
+                }
             }
 
             Text(
@@ -251,7 +300,7 @@ fun ConsoleScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         // State Action Banner
         Surface(
@@ -276,7 +325,7 @@ fun ConsoleScreen(
             )
         }
 
-        Spacer(modifier = Modifier.weight(0.5f))
+        Spacer(modifier = Modifier.height(10.dp))
 
         // Giant Heart Rate Display
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -290,22 +339,109 @@ fun ConsoleScreen(
             Text(
                 text = if (isConnected) "$currentHr" else "--",
                 color = NordicWhite,
-                fontSize = 118.sp,
+                fontSize = 88.sp,
                 fontWeight = FontWeight.Black,
                 fontFamily = FontFamily.Monospace,
-                lineHeight = 110.sp,
-                letterSpacing = (-4).sp
+                lineHeight = 84.sp,
+                letterSpacing = (-3).sp
             )
             Text(
                 text = "MAF Ceiling: ${zones.ceiling} BPM  (Floor: ${zones.floor})",
                 color = NordicLightGray,
-                fontSize = 13.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
                 fontFamily = FontFamily.Monospace
             )
         }
 
-        Spacer(modifier = Modifier.weight(0.5f))
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Real-Time Waveform / Graph Section with Toggle
+        if (hasEcgTelemetry) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "TELEMETRY MONITOR",
+                    color = NordicLightGray,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace,
+                    letterSpacing = 0.8.sp
+                )
+
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color(0xFF141518),
+                    border = BorderStroke(1.dp, NordicCardBorder)
+                ) {
+                    Row(modifier = Modifier.padding(2.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(if (!showEcgMode) Color(0xFF1E293B) else Color.Transparent)
+                                .clickable { showEcgMode = false }
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = "HR TREND",
+                                color = if (!showEcgMode) NordicWhite else NordicMuted,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(if (showEcgMode) NordicEmerald.copy(alpha = 0.25f) else Color.Transparent)
+                                .clickable { showEcgMode = true }
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(CircleShape)
+                                        .background(NordicEmerald)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "LIVE ECG",
+                                    color = if (showEcgMode) NordicEmerald else NordicMuted,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (showEcgMode && hasEcgTelemetry) {
+            LiveEcgWaveformGraph(
+                modifier = Modifier.fillMaxWidth(),
+                ecgSamples = ecgBuffer.toList(),
+                activeHr = currentHr
+            )
+        } else {
+            RealtimeHeartRateGraph(
+                modifier = Modifier.fillMaxWidth(),
+                hrHistory = state.recentHrHistory,
+                zones = zones,
+                activeHr = currentHr,
+                activeZone = activeZone
+            )
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
 
         // Secondary Dual Metrics: Cadence and Timer
         Row(
@@ -345,6 +481,25 @@ fun ConsoleScreen(
                         )
                         Text(" SPM", color = NordicLightGray, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 4.dp))
                     }
+
+                    if (state.currentHrvRmssd != null) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        val hrvFormatted = if (state.currentHrvRmssd % 1.0 == 0.0) "${state.currentHrvRmssd.toInt()}" else "${state.currentHrvRmssd}"
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = Color(0xFF141518),
+                            border = BorderStroke(1.dp, NordicEmerald.copy(alpha = 0.3f))
+                        ) {
+                            Text(
+                                text = "HRV: $hrvFormatted ms",
+                                color = NordicEmerald,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Monospace,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
                 }
             }
 
@@ -372,7 +527,7 @@ fun ConsoleScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         // Zone Distribution Track
         Surface(
@@ -411,7 +566,7 @@ fun ConsoleScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
         // Sweat-Friendly Workout Action Buttons
         Row(
@@ -424,9 +579,9 @@ fun ConsoleScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = if (state.isPaused) Color(0xFF2563EB) else Color(0xFF1C1D22)),
                 modifier = Modifier
                     .weight(1f)
-                    .height(56.dp),
+                    .height(54.dp),
                 shape = RoundedCornerShape(14.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, NordicCardBorder)
+                border = BorderStroke(1.dp, NordicCardBorder)
             ) {
                 Text(
                     text = if (state.isPaused) "RESUME" else "PAUSE",
@@ -441,9 +596,9 @@ fun ConsoleScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2C1214)),
                 modifier = Modifier
                     .weight(1f)
-                    .height(56.dp),
+                    .height(54.dp),
                 shape = RoundedCornerShape(14.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF5C1D20))
+                border = BorderStroke(1.dp, Color(0xFF5C1D20))
             ) {
                 Text(
                     text = "FINISH RUN",
@@ -451,6 +606,205 @@ fun ConsoleScreen(
                     fontWeight = FontWeight.Black,
                     fontSize = 15.sp
                 )
+            }
+        }
+    }
+}
+
+/**
+ * Real-time Lead II ECG waveform oscilloscope monitor.
+ * Displays streaming 125Hz 16-bit bio-potential samples with medical telemetry grid,
+ * dynamic microvolt scale normalization, and a live sweep head cursor.
+ */
+@Composable
+fun LiveEcgWaveformGraph(
+    modifier: Modifier = Modifier,
+    ecgSamples: List<Int>,
+    activeHr: Int?
+) {
+    val textMeasurer = rememberTextMeasurer()
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val strokeStyle = remember(density) {
+        Stroke(
+            width = with(density) { 2.dp.toPx() },
+            cap = StrokeCap.Round,
+            join = StrokeJoin.Round
+        )
+    }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "ecgPulse")
+    val pulseRadius by infiniteTransition.animateFloat(
+        initialValue = 4f,
+        targetValue = 11f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "ecgPulseRadius"
+    )
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.6f,
+        targetValue = 0.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "ecgPulseAlpha"
+    )
+
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        color = Color(0xFF141518),
+        border = BorderStroke(1.dp, NordicCardBorder)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp)
+        ) {
+            // Header: Status and Lead info
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(NordicEmerald)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "LIVE ECG WAVEFORM (125Hz)",
+                        style = TextStyle(
+                            color = NordicLightGray,
+                            fontSize = 11.sp,
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.8.sp
+                        )
+                    )
+                }
+
+                Text(
+                    text = "LEAD II • ${if (activeHr != null && activeHr > 0) "$activeHr BPM" else "-- BPM"}",
+                    style = TextStyle(
+                        color = NordicEmerald,
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Waveform Canvas
+            Canvas(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(130.dp)
+            ) {
+                // Draw Medical Telemetry Oscilloscope Grid
+                val gridSpacing = 24.dp.toPx()
+                val gridColor = Color(0xFF10B981).copy(alpha = 0.07f)
+
+                var xPos = 0f
+                while (xPos <= size.width) {
+                    drawLine(
+                        color = gridColor,
+                        start = Offset(xPos, 0f),
+                        end = Offset(xPos, size.height),
+                        strokeWidth = 1f
+                    )
+                    xPos += gridSpacing
+                }
+
+                var yPos = 0f
+                while (yPos <= size.height) {
+                    drawLine(
+                        color = gridColor,
+                        start = Offset(0f, yPos),
+                        end = Offset(size.width, yPos),
+                        strokeWidth = 1f
+                    )
+                    yPos += gridSpacing
+                }
+
+                if (ecgSamples.size < 2) {
+                    val placeholderText = "STREAMING ECG TELEMETRY..."
+                    val layoutResult = textMeasurer.measure(
+                        text = placeholderText,
+                        style = TextStyle(
+                            color = NordicLightGray.copy(alpha = 0.6f),
+                            fontSize = 10.sp,
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Medium,
+                            letterSpacing = 1.sp
+                        )
+                    )
+                    drawText(
+                        textLayoutResult = layoutResult,
+                        topLeft = Offset(
+                            x = (size.width - layoutResult.size.width) / 2f,
+                            y = (size.height - layoutResult.size.height) / 2f
+                        )
+                    )
+                } else {
+                    val minSample = (ecgSamples.minOrNull() ?: -200).toFloat()
+                    val maxSample = (ecgSamples.maxOrNull() ?: 200).toFloat()
+                    val span = (maxSample - minSample).coerceAtLeast(100f)
+                    val paddingY = size.height * 0.12f
+                    val usableHeight = size.height - (paddingY * 2)
+
+                    fun yFor(sample: Int): Float {
+                        val norm = ((sample.toFloat() - minSample) / span).coerceIn(0f, 1f)
+                        return paddingY + usableHeight * (1f - norm)
+                    }
+
+                    val stepX = size.width / (ecgSamples.size - 1).coerceAtLeast(1)
+                    val path = Path()
+
+                    ecgSamples.forEachIndexed { index, sample ->
+                        val px = index * stepX
+                        val py = yFor(sample)
+                        if (index == 0) {
+                            path.moveTo(px, py)
+                        } else {
+                            path.lineTo(px, py)
+                        }
+                    }
+
+                    // Draw the green ECG waveform trace
+                    drawPath(
+                        path = path,
+                        color = NordicEmerald,
+                        style = strokeStyle
+                    )
+
+                    // Live sweep head indicator
+                    val lastX = (ecgSamples.size - 1) * stepX
+                    val lastY = yFor(ecgSamples.last())
+
+                    drawCircle(
+                        color = NordicEmerald.copy(alpha = pulseAlpha),
+                        radius = pulseRadius.dp.toPx(),
+                        center = Offset(lastX, lastY)
+                    )
+                    drawCircle(
+                        color = NordicEmerald,
+                        radius = 4.dp.toPx(),
+                        center = Offset(lastX, lastY)
+                    )
+                    drawCircle(
+                        color = NordicWhite,
+                        radius = 1.5.dp.toPx(),
+                        center = Offset(lastX, lastY)
+                    )
+                }
             }
         }
     }

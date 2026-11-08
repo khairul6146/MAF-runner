@@ -133,6 +133,9 @@ fun MainAppContainer(
     val audioThreshold by (workoutService?.cadenceDetector?.currentThreshold ?: remember { MutableStateFlow(0.6f) }).collectAsState()
     val lastStrikeTimeMs by (workoutService?.cadenceDetector?.lastStrikeTimestampMs ?: remember { MutableStateFlow(0L) }).collectAsState()
 
+    // Real-time ECG Telemetry Flow
+    val ecgSamples by (workoutService?.bleManager?.ecgSamplesFlow ?: remember { MutableStateFlow(emptyList<Int>()) }).collectAsState()
+
     // Real-time audio calibration preview on Setup Screen
     LaunchedEffect(currentTab, cadenceEnabled, sessionState.isActive, workoutService) {
         if (currentTab == 0 && cadenceEnabled && !sessionState.isActive) {
@@ -256,7 +259,8 @@ fun MainAppContainer(
                     },
                     onSkipWarmup = { workoutService?.skipWarmup() },
                     onAdjustDuration = { deltaSec -> workoutService?.adjustTestDuration(deltaSec) },
-                    onStartRecoveryEarly = { workoutService?.startRecoveryEarly() }
+                    onStartRecoveryEarly = { workoutService?.startRecoveryEarly() },
+                    ecgSamples = ecgSamples
                 )
                 2 -> HistoryScreen(
                     workouts = workouts,
