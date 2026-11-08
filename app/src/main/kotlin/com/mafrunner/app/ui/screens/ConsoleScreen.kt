@@ -633,6 +633,7 @@ fun LiveEcgWaveformGraph(
     }
 
     val infiniteTransition = rememberInfiniteTransition(label = "ecgPulse")
+    val ecgPath = remember { Path() }
     val pulseRadius by infiniteTransition.animateFloat(
         initialValue = 4f,
         targetValue = 11f,
@@ -766,21 +767,21 @@ fun LiveEcgWaveformGraph(
                     }
 
                     val stepX = size.width / (ecgSamples.size - 1).coerceAtLeast(1)
-                    val path = Path()
+                    ecgPath.reset()
 
                     ecgSamples.forEachIndexed { index, sample ->
                         val px = index * stepX
                         val py = yFor(sample)
                         if (index == 0) {
-                            path.moveTo(px, py)
+                            ecgPath.moveTo(px, py)
                         } else {
-                            path.lineTo(px, py)
+                            ecgPath.lineTo(px, py)
                         }
                     }
 
                     // Draw the green ECG waveform trace
                     drawPath(
-                        path = path,
+                        path = ecgPath,
                         color = NordicEmerald,
                         style = strokeStyle
                     )

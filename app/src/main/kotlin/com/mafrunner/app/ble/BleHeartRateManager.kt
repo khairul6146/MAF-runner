@@ -160,8 +160,10 @@ class BleHeartRateManager(private val context: Context) {
     @SuppressLint("MissingPermission")
     fun disconnect() {
         isManualDisconnect = true
-        pendingDescriptorWrites.clear()
-        isWritingDescriptor = false
+        synchronized(pendingDescriptorWrites) {
+            pendingDescriptorWrites.clear()
+            isWritingDescriptor = false
+        }
         activeGatt?.disconnect()
         activeGatt?.close()
         activeGatt = null
@@ -213,21 +215,28 @@ class BleHeartRateManager(private val context: Context) {
     }
 
     private fun queueDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor) {
-        pendingDescriptorWrites.add(descriptor)
+        synchronized(pendingDescriptorWrites) {
+            pendingDescriptorWrites.add(descriptor)
+        }
         processNextDescriptorWrite(gatt)
     }
 
     @SuppressLint("MissingPermission")
     private fun processNextDescriptorWrite(gatt: BluetoothGatt) {
-        if (isWritingDescriptor) return
-        val next = pendingDescriptorWrites.pollFirst() ?: return
-        isWritingDescriptor = true
+        val next = synchronized(pendingDescriptorWrites) {
+            if (isWritingDescriptor) return
+            val d = pendingDescriptorWrites.pollFirst() ?: return
+            isWritingDescriptor = true
+            d
+        }
         @Suppress("DEPRECATION")
         next.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
         @Suppress("DEPRECATION")
         val initiated = gatt.writeDescriptor(next)
         if (!initiated) {
-            isWritingDescriptor = false
+            synchronized(pendingDescriptorWrites) {
+                isWritingDescriptor = false
+            }
             processNextDescriptorWrite(gatt)
         }
     }
@@ -331,7 +340,9 @@ class BleHeartRateManager(private val context: Context) {
             descriptor: BluetoothGattDescriptor,
             status: Int
         ) {
-            isWritingDescriptor = false
+            synchronized(pendingDescriptorWrites) {
+                isWritingDescriptor = false
+            }
             processNextDescriptorWrite(gatt)
         }
 
