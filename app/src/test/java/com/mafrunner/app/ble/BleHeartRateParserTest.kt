@@ -31,5 +31,6 @@ class BleHeartRateParserTest {
         assertEquals(140, measurement.hr)
         assertEquals(1, measurement.rrIntervals.size)
         assertEquals(1024, measurement.rrIntervals[0])
+        assertEquals(listOf(1000.0), measurement.rrIntervalsMs)
     }
 }

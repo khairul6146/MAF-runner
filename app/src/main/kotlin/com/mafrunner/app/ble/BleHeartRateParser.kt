@@ -1,8 +1,11 @@
 package com.mafrunner.app.ble
 
+import kotlin.math.round
+
 data class HeartRateMeasurement(
     val hr: Int,
-    val rrIntervals: List<Int> = emptyList()
+    val rrIntervals: List<Int> = emptyList(),
+    val rrIntervalsMs: List<Double> = emptyList()
 )
 
 class BleHeartRateParser {
@@ -47,6 +50,12 @@ class BleHeartRateParser {
             }
         }
 
-        return HeartRateMeasurement(hr = hr, rrIntervals = rrIntervals)
+        val rrIntervalsMs = rrIntervals.map { round(it / 1.024 * 10.0) / 10.0 }
+
+        return HeartRateMeasurement(
+            hr = hr,
+            rrIntervals = rrIntervals,
+            rrIntervalsMs = rrIntervalsMs
+        )
     }
 }
