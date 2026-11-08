@@ -9,6 +9,7 @@ import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.mafrunner.app.MainActivity
 import com.mafrunner.app.R
@@ -95,10 +96,18 @@ class WorkoutTrackingService : Service() {
                 if (currentState.isActive && !currentState.isPaused && hr != null) {
                     val now = System.currentTimeMillis()
                     if (alertEvaluator.shouldTriggerCeilingAlert(hr, activeZones.ceiling, lastCeilingAlertMs, now)) {
-                        alertEngine.playCeilingAlert()
+                        runCatching {
+                            alertEngine.playCeilingAlert()
+                        }.onFailure { e ->
+                            Log.e("WorkoutTrackingService", "Failed to trigger ceiling alert", e)
+                        }
                         lastCeilingAlertMs = now
                     } else if (currentState.elapsedSeconds >= 30 && alertEvaluator.shouldTriggerFloorAlert(hr, activeZones.floor, lastFloorAlertMs, now)) {
-                        alertEngine.playFloorAlert()
+                        runCatching {
+                            alertEngine.playFloorAlert()
+                        }.onFailure { e ->
+                            Log.e("WorkoutTrackingService", "Failed to trigger floor alert", e)
+                        }
                         lastFloorAlertMs = now
                     }
                 }
@@ -233,10 +242,14 @@ class WorkoutTrackingService : Service() {
                         // Voice coach triggers when out of zone during steady test
                         if (newPhase == TestPhase.TEST_STEADY && currentHr > 0) {
                             val now = System.currentTimeMillis()
-                            if (currentZone == MafZone.OVER_CEILING) {
-                                alertEngine.speechCoach.speakCeilingWarning(currentHr, now)
-                            } else if (current.elapsedSeconds >= 30 && currentZone == MafZone.BELOW_FLOOR) {
-                                alertEngine.speechCoach.speakFloorWarning(currentHr, now)
+                            runCatching {
+                                if (currentZone == MafZone.OVER_CEILING) {
+                                    alertEngine.speechCoach.speakCeilingWarning(currentHr, now)
+                                } else if (current.elapsedSeconds >= 30 && currentZone == MafZone.BELOW_FLOOR) {
+                                    alertEngine.speechCoach.speakFloorWarning(currentHr, now)
+                                }
+                            }.onFailure { e ->
+                                Log.e("WorkoutTrackingService", "Failed to trigger speech coach warning", e)
                             }
                         }
 
