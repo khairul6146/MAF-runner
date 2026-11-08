@@ -20,6 +20,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -119,6 +120,38 @@ fun RealtimeHeartRateGraph(
     }
 
     val textMeasurer = rememberTextMeasurer()
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val dashEffect = remember { PathEffect.dashPathEffect(floatArrayOf(10f, 8f), 0f) }
+    val strokePath = remember { Path() }
+    val fillPath = remember { Path() }
+    val strokeStyle = remember(density) {
+        Stroke(
+            width = with(density) { 2.5.dp.toPx() },
+            cap = StrokeCap.Round,
+            join = StrokeJoin.Round
+        )
+    }
+    val gradientBrush = remember(activeColor) {
+        Brush.verticalGradient(
+            colors = listOf(
+                activeColor.copy(alpha = 0.25f),
+                activeColor.copy(alpha = 0.0f)
+            )
+        )
+    }
+
+    val placeholderLayoutResult = remember(textMeasurer) {
+        textMeasurer.measure(
+            text = "COLLECTING HEART RATE TELEMETRY...",
+            style = TextStyle(
+                color = NordicLightGray.copy(alpha = 0.6f),
+                fontSize = 10.sp,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Medium,
+                letterSpacing = 1.sp
+            )
+        )
+    }
 
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val pulseRadius by infiniteTransition.animateFloat(
@@ -207,8 +240,6 @@ fun RealtimeHeartRateGraph(
                     return size.height * (1f - normalized)
                 }
 
-                val dashEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f), 0f)
-
                 // 1. Guidelines & Threshold Bands
                 val yCeiling = yFor(zones.ceiling.toFloat())
                 val yTarget = yFor(zones.targetMin.toFloat())
@@ -274,22 +305,11 @@ fun RealtimeHeartRateGraph(
                         pathEffect = dashEffect
                     )
 
-                    val placeholderText = "COLLECTING HEART RATE TELEMETRY..."
-                    val layoutResult = textMeasurer.measure(
-                        text = placeholderText,
-                        style = TextStyle(
-                            color = NordicLightGray.copy(alpha = 0.6f),
-                            fontSize = 10.sp,
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.Medium,
-                            letterSpacing = 1.sp
-                        )
-                    )
                     drawText(
-                        textLayoutResult = layoutResult,
+                        textLayoutResult = placeholderLayoutResult,
                         topLeft = Offset(
-                            x = (size.width - layoutResult.size.width) / 2f,
-                            y = (size.height - layoutResult.size.height) / 2f
+                            x = (size.width - placeholderLayoutResult.size.width) / 2f,
+                            y = (size.height - placeholderLayoutResult.size.height) / 2f
                         )
                     )
                 } else {
@@ -298,8 +318,8 @@ fun RealtimeHeartRateGraph(
                         Offset(x = index * stepX, y = yFor(hr.toFloat()))
                     }
 
-                    val strokePath = Path()
-                    val fillPath = Path()
+                    strokePath.reset()
+                    fillPath.reset()
 
                     strokePath.moveTo(points.first().x, points.first().y)
                     fillPath.moveTo(points.first().x, size.height)
@@ -330,25 +350,14 @@ fun RealtimeHeartRateGraph(
                     // Vertical gradient area fill under the curve
                     drawPath(
                         path = fillPath,
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                activeColor.copy(alpha = 0.25f),
-                                activeColor.copy(alpha = 0.0f)
-                            ),
-                            startY = 0f,
-                            endY = size.height
-                        )
+                        brush = gradientBrush
                     )
 
                     // Waveform line stroke
                     drawPath(
                         path = strokePath,
                         color = activeColor,
-                        style = Stroke(
-                            width = 2.5.dp.toPx(),
-                            cap = StrokeCap.Round,
-                            join = StrokeJoin.Round
-                        )
+                        style = strokeStyle
                     )
 
                     // 3. Live Head Indicator Dot
