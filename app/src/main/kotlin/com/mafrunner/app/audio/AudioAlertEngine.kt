@@ -11,6 +11,7 @@ import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.util.Log
 import java.io.File
 
 class AudioAlertEngine(private val context: Context) {
@@ -90,27 +91,41 @@ class AudioAlertEngine(private val context: Context) {
     }
 
     fun playCeilingAlert() {
-        requestTransientAudioFocus()
-        if (ceilingSoundId != 0) {
-            soundPool.play(ceilingSoundId, 1.0f, 1.0f, 1, 0, 1.0f)
-        }
+        try {
+            requestTransientAudioFocus()
+            if (ceilingSoundId != 0) {
+                soundPool.play(ceilingSoundId, 1.0f, 1.0f, 1, 0, 1.0f)
+            }
 
-        // Haptic feedback
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrator?.vibrate(VibrationEffect.createOneShot(250, VibrationEffect.DEFAULT_AMPLITUDE))
-        } else {
-            @Suppress("DEPRECATION")
-            vibrator?.vibrate(250)
+            // Haptic feedback with hardware presence check and safety net
+            try {
+                if (vibrator?.hasVibrator() == true) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        vibrator.vibrate(VibrationEffect.createOneShot(250, VibrationEffect.DEFAULT_AMPLITUDE))
+                    } else {
+                        @Suppress("DEPRECATION")
+                        vibrator.vibrate(250)
+                    }
+                }
+            } catch (e: Throwable) {
+                Log.w("AudioAlertEngine", "Ceiling haptic vibration skipped or failed: ${e.message}")
+            }
+            abandonTransientAudioFocusAfter(350L)
+        } catch (e: Throwable) {
+            Log.e("AudioAlertEngine", "playCeilingAlert failed: ${e.message}")
         }
-        abandonTransientAudioFocusAfter(350L)
     }
 
     fun playFloorAlert() {
-        requestTransientAudioFocus()
-        if (floorSoundId != 0) {
-            soundPool.play(floorSoundId, 0.7f, 0.7f, 0, 0, 1.0f)
+        try {
+            requestTransientAudioFocus()
+            if (floorSoundId != 0) {
+                soundPool.play(floorSoundId, 0.7f, 0.7f, 0, 0, 1.0f)
+            }
+            abandonTransientAudioFocusAfter(250L)
+        } catch (e: Throwable) {
+            Log.e("AudioAlertEngine", "playFloorAlert failed: ${e.message}")
         }
-        abandonTransientAudioFocusAfter(250L)
     }
 
     fun release() {
