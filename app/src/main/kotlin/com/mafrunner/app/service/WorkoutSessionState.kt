@@ -26,7 +26,9 @@ data class WorkoutSessionState(
     val testOverSeconds: Long = 0L,
     val testAvgHr: Int = 0,
     val testAvgCadence: Int = 0,
-    val strapBatteryLevel: Int? = null
+    val strapBatteryLevel: Int? = null,
+    val currentHrvRmssd: Double? = null,
+    val recentHrHistory: List<Int> = emptyList()
 ) {
     val inZonePercentage: Int
         get() = if (elapsedSeconds > 0) ((inZoneSeconds.toDouble() / elapsedSeconds) * 100).toInt() else 0

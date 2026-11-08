@@ -7,6 +7,7 @@ import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
+import android.os.Build
 import android.os.ParcelUuid
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,6 +45,12 @@ class BleHeartRateManager(private val context: Context) {
     private val _batteryLevelFlow = MutableStateFlow<Int?>(null)
     val batteryLevelFlow: StateFlow<Int?> = _batteryLevelFlow.asStateFlow()
 
+    private val _ecgSamplesFlow = MutableStateFlow<List<Int>>(emptyList())
+    val ecgSamplesFlow: StateFlow<List<Int>> = _ecgSamplesFlow.asStateFlow()
+
+    private val _currentHrvRmssd = MutableStateFlow<Double?>(null)
+    val currentHrvRmssd: StateFlow<Double?> = _currentHrvRmssd.asStateFlow()
+
     private val _discoveredDevices = MutableStateFlow<List<DiscoveredBleDevice>>(emptyList())
     val discoveredDevices: StateFlow<List<DiscoveredBleDevice>> = _discoveredDevices.asStateFlow()
 
@@ -52,12 +59,21 @@ class BleHeartRateManager(private val context: Context) {
     private var isManualDisconnect = false
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
+    private val pendingDescriptorWrites = ArrayDeque<BluetoothGattDescriptor>()
+    private var isWritingDescriptor = false
+
     companion object {
         val HEART_RATE_SERVICE_UUID: UUID = UUID.fromString("0000180D-0000-1000-8000-00805F9B34FB")
         val HEART_RATE_MEASUREMENT_UUID: UUID = UUID.fromString("00002A37-0000-1000-8000-00805F9B34FB")
         val BATTERY_SERVICE_UUID: UUID = UUID.fromString("0000180F-0000-1000-8000-00805F9B34FB")
         val BATTERY_LEVEL_UUID: UUID = UUID.fromString("00002A19-0000-1000-8000-00805F9B34FB")
         val CLIENT_CHARACTERISTIC_CONFIG_UUID: UUID = UUID.fromString("00002902-0000-1000-8000-00805F9B34FB")
+
+        val FITCARE_ECG_SERVICE_UUID: UUID = UUID.fromString("0000EC00-0000-1000-8000-00805F9B34FB")
+        val FITCARE_ECG_STREAM_UUID: UUID = UUID.fromString("0000EC09-0000-1000-8000-00805F9B34FB")
+        val FITCARE_ECG_CONTROL_UUID: UUID = UUID.fromString("0000EC0A-0000-1000-8000-00805F9B34FB")
+        val FITCARE_ARMBAND_CONTROL_UUID: UUID = UUID.fromString("A430FCA2-044B-C6E2-92B2-61774EFF0F01")
+
         private const val PREFS_NAME = "maf_ble_prefs"
         private const val KEY_SAVED_MAC = "saved_mac_address"
     }
@@ -144,12 +160,105 @@ class BleHeartRateManager(private val context: Context) {
     @SuppressLint("MissingPermission")
     fun disconnect() {
         isManualDisconnect = true
+        pendingDescriptorWrites.clear()
+        isWritingDescriptor = false
         activeGatt?.disconnect()
         activeGatt?.close()
         activeGatt = null
         _connectionState.value = BleConnectionState.DISCONNECTED
         _heartRateFlow.value = null
         _batteryLevelFlow.value = null
+        _currentHrvRmssd.value = null
+        _ecgSamplesFlow.value = emptyList()
+    }
+
+    @SuppressLint("MissingPermission")
+    fun sendStrapMaxHrThreshold(maxHr: Int) {
+        val gatt = activeGatt ?: return
+        if (_connectionState.value != BleConnectionState.CONNECTED) return
+
+        val command = FitcareProtocolEngine.buildArmbandThresholdCommand(maxHr)
+
+        var targetChar: BluetoothGattCharacteristic? = null
+        for (service in gatt.services) {
+            val found = service.getCharacteristic(FITCARE_ECG_CONTROL_UUID)
+                ?: service.getCharacteristic(FITCARE_ARMBAND_CONTROL_UUID)
+            if (found != null) {
+                targetChar = found
+                break
+            }
+        }
+
+        if (targetChar != null) {
+            runCatching {
+                val writeType = if ((targetChar.properties and BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) != 0 &&
+                    (targetChar.properties and BluetoothGattCharacteristic.PROPERTY_WRITE) == 0) {
+                    BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+                } else {
+                    BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+                }
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    gatt.writeCharacteristic(targetChar, command, writeType)
+                } else {
+                    @Suppress("DEPRECATION")
+                    targetChar.value = command
+                    @Suppress("DEPRECATION")
+                    targetChar.writeType = writeType
+                    @Suppress("DEPRECATION")
+                    gatt.writeCharacteristic(targetChar)
+                }
+            }
+        }
+    }
+
+    private fun queueDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor) {
+        pendingDescriptorWrites.add(descriptor)
+        processNextDescriptorWrite(gatt)
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun processNextDescriptorWrite(gatt: BluetoothGatt) {
+        if (isWritingDescriptor) return
+        val next = pendingDescriptorWrites.pollFirst() ?: return
+        isWritingDescriptor = true
+        @Suppress("DEPRECATION")
+        next.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+        @Suppress("DEPRECATION")
+        val initiated = gatt.writeDescriptor(next)
+        if (!initiated) {
+            isWritingDescriptor = false
+            processNextDescriptorWrite(gatt)
+        }
+    }
+
+    private fun handleCharacteristicChanged(characteristic: BluetoothGattCharacteristic, value: ByteArray) {
+        when (characteristic.uuid) {
+            HEART_RATE_MEASUREMENT_UUID -> {
+                val measurement = parser.parse(value)
+                if (measurement.hr > 0) {
+                    _heartRateFlow.value = measurement.hr
+                }
+                if (measurement.rrIntervalsMs.size >= 2) {
+                    val rmssd = FitcareProtocolEngine.calculateRmssd(measurement.rrIntervalsMs)
+                    if (rmssd != null) {
+                        _currentHrvRmssd.value = rmssd
+                    }
+                }
+            }
+            BATTERY_LEVEL_UUID -> {
+                val level = batteryParser.parse(value)
+                if (level != null) {
+                    _batteryLevelFlow.value = level
+                }
+            }
+            FITCARE_ECG_STREAM_UUID -> {
+                val samples = FitcareProtocolEngine.parseEcgPacket(value)
+                if (!samples.isNullOrEmpty()) {
+                    _ecgSamplesFlow.value = samples
+                }
+            }
+        }
     }
 
     private val gattCallback = object : BluetoothGattCallback() {
@@ -159,9 +268,13 @@ class BleHeartRateManager(private val context: Context) {
                 _connectionState.value = BleConnectionState.CONNECTED
                 gatt.discoverServices()
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                pendingDescriptorWrites.clear()
+                isWritingDescriptor = false
                 _connectionState.value = BleConnectionState.DISCONNECTED
                 _heartRateFlow.value = null
                 _batteryLevelFlow.value = null
+                _currentHrvRmssd.value = null
+                _ecgSamplesFlow.value = emptyList()
                 // Auto-reconnect loop
                 if (!isManualDisconnect) {
                     targetMacAddress?.let { mac ->
@@ -186,8 +299,7 @@ class BleHeartRateManager(private val context: Context) {
                     gatt.setCharacteristicNotification(characteristic, true)
                     val descriptor = characteristic.getDescriptor(CLIENT_CHARACTERISTIC_CONFIG_UUID)
                     if (descriptor != null) {
-                        descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-                        gatt.writeDescriptor(descriptor)
+                        queueDescriptorWrite(gatt, descriptor)
                     }
                 }
 
@@ -200,7 +312,27 @@ class BleHeartRateManager(private val context: Context) {
                         gatt.setCharacteristicNotification(batteryChar, true)
                     }
                 }
+
+                // Fitcare ECG Service
+                val ecgService = gatt.getService(FITCARE_ECG_SERVICE_UUID)
+                val ecgChar = ecgService?.getCharacteristic(FITCARE_ECG_STREAM_UUID)
+                if (ecgChar != null) {
+                    gatt.setCharacteristicNotification(ecgChar, true)
+                    val ecgDescriptor = ecgChar.getDescriptor(CLIENT_CHARACTERISTIC_CONFIG_UUID)
+                    if (ecgDescriptor != null) {
+                        queueDescriptorWrite(gatt, ecgDescriptor)
+                    }
+                }
             }
+        }
+
+        override fun onDescriptorWrite(
+            gatt: BluetoothGatt,
+            descriptor: BluetoothGattDescriptor,
+            status: Int
+        ) {
+            isWritingDescriptor = false
+            processNextDescriptorWrite(gatt)
         }
 
         override fun onCharacteristicRead(
@@ -237,17 +369,7 @@ class BleHeartRateManager(private val context: Context) {
             characteristic: BluetoothGattCharacteristic,
             value: ByteArray
         ) {
-            if (characteristic.uuid == HEART_RATE_MEASUREMENT_UUID) {
-                val measurement = parser.parse(value)
-                if (measurement.hr > 0) {
-                    _heartRateFlow.value = measurement.hr
-                }
-            } else if (characteristic.uuid == BATTERY_LEVEL_UUID) {
-                val level = batteryParser.parse(value)
-                if (level != null) {
-                    _batteryLevelFlow.value = level
-                }
-            }
+            handleCharacteristicChanged(characteristic, value)
         }
 
         @Deprecated("Deprecated in Java for API 33+")
@@ -256,18 +378,9 @@ class BleHeartRateManager(private val context: Context) {
             characteristic: BluetoothGattCharacteristic
         ) {
             @Suppress("DEPRECATION")
-            characteristic.value?.let { bytes ->
-                if (characteristic.uuid == HEART_RATE_MEASUREMENT_UUID) {
-                    val measurement = parser.parse(bytes)
-                    if (measurement.hr > 0) {
-                        _heartRateFlow.value = measurement.hr
-                    }
-                } else if (characteristic.uuid == BATTERY_LEVEL_UUID) {
-                    val level = batteryParser.parse(bytes)
-                    if (level != null) {
-                        _batteryLevelFlow.value = level
-                    }
-                }
+            val bytes = characteristic.value
+            if (bytes != null) {
+                handleCharacteristicChanged(characteristic, bytes)
             }
         }
     }

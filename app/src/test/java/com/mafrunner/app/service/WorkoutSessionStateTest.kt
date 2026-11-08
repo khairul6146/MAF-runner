@@ -63,4 +63,18 @@ class WorkoutSessionStateTest {
         val defaultState = WorkoutSessionState()
         org.junit.Assert.assertNull(defaultState.strapBatteryLevel)
     }
+
+    @Test
+    fun testHrvAndRecentHrHistoryFields() {
+        val defaultState = WorkoutSessionState()
+        org.junit.Assert.assertNull(defaultState.currentHrvRmssd)
+        org.junit.Assert.assertTrue(defaultState.recentHrHistory.isEmpty())
+
+        val state = WorkoutSessionState(
+            currentHrvRmssd = 42.5,
+            recentHrHistory = listOf(130, 131, 132)
+        )
+        assertEquals(42.5, state.currentHrvRmssd)
+        assertEquals(listOf(130, 131, 132), state.recentHrHistory)
+    }
 }

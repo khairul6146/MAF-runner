@@ -54,6 +54,7 @@ class WorkoutTrackingService : Service() {
     val sessionState: StateFlow<WorkoutSessionState> = _sessionState.asStateFlow()
 
     private val samples = mutableListOf<HeartRateSampleEntity>()
+    private val recentHrBuffer = ArrayDeque<Int>(90)
     private var activeZones = MafZones(ceiling = 140, targetMin = 135, floor = 130)
 
     private var workoutStartTime = 0L
@@ -121,6 +122,13 @@ class WorkoutTrackingService : Service() {
             }
         }
 
+        // Observe BLE HRV (RMSSD)
+        scope.launch {
+            bleManager.currentHrvRmssd.collect { rmssd ->
+                _sessionState.value = _sessionState.value.copy(currentHrvRmssd = rmssd)
+            }
+        }
+
         // Observe Cadence
         scope.launch {
             cadenceDetector.cadenceSpm.collect { spm ->
@@ -138,6 +146,11 @@ class WorkoutTrackingService : Service() {
 
     fun configureZones(age: Int, category: MafCategory, manualCeiling: Int? = null) {
         activeZones = mafCalculator.calculate(age, category, manualCeiling)
+        runCatching {
+            bleManager.sendStrapMaxHrThreshold(activeZones.ceiling)
+        }.onFailure { e ->
+            Log.e("WorkoutTrackingService", "Failed to send strap max HR threshold", e)
+        }
     }
 
     fun startWorkout(
@@ -147,6 +160,7 @@ class WorkoutTrackingService : Service() {
         targetTestDurationSec: Long = 1800L
     ) {
         samples.clear()
+        recentHrBuffer.clear()
         workoutStartTime = System.currentTimeMillis()
         wakeLock?.acquire(3 * 60 * 60 * 1000L) // 3 hours max
 
@@ -166,7 +180,11 @@ class WorkoutTrackingService : Service() {
             isGuidedTest = isGuidedTest,
             testPhase = testProtocolEngine?.currentPhase ?: TestPhase.FREE_RUN,
             phaseRemainingSeconds = testProtocolEngine?.phaseRemainingSeconds ?: 0L,
-            targetTestDurationSeconds = targetTestDurationSec
+            targetTestDurationSeconds = targetTestDurationSec,
+            currentHr = _sessionState.value.currentHr,
+            strapBatteryLevel = _sessionState.value.strapBatteryLevel,
+            currentHrvRmssd = bleManager.currentHrvRmssd.value ?: _sessionState.value.currentHrvRmssd,
+            recentHrHistory = emptyList()
         )
         cadenceRecordingEnabled = enableCadence
         if (enableCadence) {
@@ -198,6 +216,11 @@ class WorkoutTrackingService : Service() {
 
                     var currentZone: MafZone? = null
                     if (currentHr > 0) {
+                        if (recentHrBuffer.size >= 90) {
+                            recentHrBuffer.removeFirst()
+                        }
+                        recentHrBuffer.addLast(currentHr)
+
                         currentZone = mafCalculator.evaluateZone(currentHr, activeZones)
                         when (currentZone) {
                             MafZone.BELOW_FLOOR -> under++
@@ -213,6 +236,9 @@ class WorkoutTrackingService : Service() {
                             )
                         )
                     }
+
+                    val recentList = recentHrBuffer.toList()
+                    val latestHrv = bleManager.currentHrvRmssd.value ?: current.currentHrvRmssd
 
                     val engine = testProtocolEngine
                     if (engine != null) {
@@ -269,14 +295,18 @@ class WorkoutTrackingService : Service() {
                             testInZoneSeconds = engine.testInZoneSeconds,
                             testOverSeconds = engine.testOverSeconds,
                             testAvgHr = engine.testAvgHr,
-                            testAvgCadence = engine.testAvgCadence
+                            testAvgCadence = engine.testAvgCadence,
+                            recentHrHistory = recentList,
+                            currentHrvRmssd = latestHrv
                         )
                     } else {
                         _sessionState.value = current.copy(
                             elapsedSeconds = current.elapsedSeconds + 1,
                             underSeconds = under,
                             inZoneSeconds = inZone,
-                            overSeconds = over
+                            overSeconds = over,
+                            recentHrHistory = recentList,
+                            currentHrvRmssd = latestHrv
                         )
                     }
                     updateNotification()
@@ -356,6 +386,7 @@ class WorkoutTrackingService : Service() {
         }
 
         stopForeground(STOP_FOREGROUND_REMOVE)
+        recentHrBuffer.clear()
         _sessionState.value = WorkoutSessionState(isActive = false)
 
         if (current.elapsedSeconds < 5) return null // Too short to record
